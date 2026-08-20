@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu — Campus Eats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --hunter: #1F3823;
+    --brick: #A8412C;
+    --parchment: #EFE9DA;
+    --gold: #C9A227;
+    --ink: #2B2418;
+    --white: #FFFFFF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'Work Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, .display {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    line-height: 1.05;
+  }
+
+  .nav-label, .section-heading, .vendor-name, .vendor-status {
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+  }
+
+  a { text-decoration: none; color: inherit; }
+
+  /* ---------- NAV (matches homepage) ---------- */
+
+  .navbar {
+    background: var(--hunter);
+    padding: 16px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 3px solid var(--gold);
+  }
+
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 2px solid var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .brand-badge svg { width: 26px; height: 26px; }
+
+  .wordmark {
+    color: var(--white);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .nav-label {
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    opacity: 0.92;
+    padding: 6px 2px;
+    border-bottom: 2px solid transparent;
+    transition: opacity 0.15s ease;
+  }
+
+  .nav-label.active { border-bottom-color: var(--gold); opacity: 1; }
+  .nav-label:hover, .nav-label:focus-visible { opacity: 1; border-bottom-color: var(--gold); }
+
+  .nav-links .btn-signin {
+    background: var(--brick);
+    color: var(--white);
+    padding: 9px 18px;
+    border-radius: 8px;
+    border-bottom: none;
+  }
+  .nav-links .btn-signin:hover { background: #8f371f; }
+
+  .nav-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--white);
+    border-radius: 6px;
+    width: 40px;
+    height: 36px;
+    color: var(--white);
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  /* ---------- PAGE HEADER ---------- */
+
+  .page-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 52px 24px 8px;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    border: 1.5px solid var(--brick);
+    color: var(--brick);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    margin-bottom: 20px;
+  }
+
+  .page-title {
+    font-size: clamp(30px, 4.5vw, 46px);
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .page-title .accent { color: var(--brick); }
+
+  .page-copy {
+    margin-top: 16px;
+    font-size: 16px;
+    line-height: 1.65;
+    max-width: 62ch;
+    opacity: 0.9;
+  }
+
+  .section-divider {
+    max-width: 1200px;
+    margin: 32px auto 0;
+    padding: 0 24px;
+  }
+
+  .section-divider hr {
+    border: none;
+    height: 3px;
+    background: var(--brick);
+    border-radius: 3px;
+  }
+
+  /* ---------- VENDOR SECTIONS ---------- */
+
+  .vendors-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px 90px;
+  }
+
+  .section-heading {
+    color: var(--brick);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    margin-bottom: 28px;
+  }
+
+  .vendor-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 26px;
+  }
+
+  .vendor-card {
+    background: var(--white);
+    border: 1px solid rgba(43, 36, 24, 0.12);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(43, 36, 24, 0.06);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .vendor-banner {
+    height: 108px;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--hunter),
+      var(--hunter) 12px,
+      #24432a 12px,
+      #24432a 24px
+    );
+    position: relative;
+  }
+
+  .vendor-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-bottom: 3px solid var(--gold);
+  }
+
+  .vendor-body {
+    padding: 20px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+  }
+
+  .vendor-name {
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: 0.4px;
+  }
+
+  .vendor-cuisine {
+    font-size: 13px;
+    color: var(--ink);
+    opacity: 0.65;
+    font-weight: 500;
+  }
+
+  .vendor-status {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--parchment);
+    border: 1px solid var(--gold);
+    color: var(--hunter);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    width: fit-content;
+  }
+
+  .vendor-status .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .vendor-note {
+    font-size: 13.5px;
+    color: var(--ink);
+    opacity: 0.75;
+    line-height: 1.5;
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+
+  @media (max-width: 900px) {
+    .vendor-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+    .vendor-grid { grid-template-columns: 1fr; }
+    .page-header { padding-top: 40px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="navbar">
+  <div class="nav-inner">
+    <a class="brand" href="campuseats-homepage.html" style="align-items:center;">
+      <span class="brand-badge" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="32" cy="14" r="6" fill="#FFFFFF"/>
+          <path d="M32 21 L27 34 L20 40" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M32 21 L38 32 L47 26" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M27 34 L23 50" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+          <path d="M32 34 L38 49" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+          <rect x="12" y="36" width="12" height="8" rx="1" fill="#FFFFFF"/>
+          <rect x="13.5" y="34" width="9" height="2" fill="#FFFFFF"/>
+          <path d="M43 22 a6 6 0 0 1 12 0 z" fill="#FFFFFF"/>
+          <rect x="41.5" y="22" width="15" height="2.4" rx="1.2" fill="#FFFFFF"/>
+          <rect x="47.5" y="15" width="2" height="4" fill="#FFFFFF"/>
+        </svg>
+      </span>
+      <span class="wordmark">Campus Eats</span>
+    </a>
+
+    <button class="nav-toggle" aria-label="Open menu">☰</button>
+
+    <nav class="nav-links">
+      <a class="nav-label active" href="#">Menu</a>
+      <a class="nav-label" href="#track">Track Order</a>
+      <a class="nav-label btn-signin" href="#signin">Sign In</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ PAGE HEADER ============ -->
+<section class="page-header">
+  <span class="eyebrow">Wits University · Main Campus</span>
+  <h1 class="page-title">The <span class="accent">Menu</span></h1>
+  <p class="page-copy">
+    We're onboarding campus vendors one shop at a time. Below are the businesses we're in
+    conversation with — full menus, prices and photos go live here as each partnership is
+    confirmed.
+  </p>
+</section>
+
+<div class="section-divider"><hr></div>
+
+<!-- ============ VENDOR SECTIONS ============ -->
+<section class="vendors-section">
+  <h2 class="section-heading">Our Vendors</h2>
+
+  <div class="vendor-grid">
+
+    <article class="vendor-card">
+      <div class="vendor-banner"></div>
+      <div class="vendor-body">
+        <div class="vendor-name">Delhi Delicious</div>
+        <div class="vendor-cuisine">Indian</div>
+        <p class="vendor-note">Menu items, prices and photos will be added once the partnership is confirmed.</p>
+        <span class="vendor-status"><span class="dot"></span>Partnership pending</span>
+      </div>
+    </article>
+
+    <article class="vendor-card">
+      <div class="vendor-banner"></div>
+      <div class="vendor-body">
+        <div class="vendor-name">Jimmy's</div>
+        <div class="vendor-cuisine">Campus Eatery</div>
+        <p class="vendor-note">Menu items, prices and photos will be added once the partnership is confirmed.</p>
+        <span class="vendor-status"><span class="dot"></span>Partnership pending</span>
+      </div>
+    </article>
+
+    <article class="vendor-card">
+      <div class="vendor-banner"></div>
+      <div class="vendor-body">
+        <div class="vendor-name">Chinese Food</div>
+        <div class="vendor-cuisine">Chinese</div>
+        <p class="vendor-note">Menu items, prices and photos will be added once the partnership is confirmed.</p>
+        <span class="vendor-status"><span class="dot"></span>Partnership pending</span>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+</body>
+</html>
