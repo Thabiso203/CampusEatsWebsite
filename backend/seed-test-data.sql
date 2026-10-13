@@ -3,16 +3,18 @@
 -- Run this in the Neon SQL Editor for the test database before testing orders.
 
 INSERT INTO buildings (name, campus_zone, is_active)
-VALUES
-  ('Wits Main Campus', 'Campus', TRUE),
-  ('Wits Medical School', 'Campus', TRUE),
-  ('Wits Education Campus', 'Campus', TRUE),
-  ('West Campus Residences', 'Residences', TRUE),
-  ('East Campus Residences', 'Residences', TRUE),
-  ('Matrix Mall', 'Retail', TRUE),
-  ('Wits Junction', 'Campus', TRUE),
-  ('Library Lawns', 'Campus', TRUE)
-ON CONFLICT (name) DO UPDATE SET is_active = TRUE;
+SELECT source.name, source.campus_zone, TRUE
+FROM (VALUES
+  ('Wits Main Campus', 'Campus'),
+  ('Wits Medical School', 'Campus'),
+  ('Wits Education Campus', 'Campus'),
+  ('West Campus Residences', 'Residences'),
+  ('East Campus Residences', 'Residences'),
+  ('Matrix Mall', 'Retail'),
+  ('Wits Junction', 'Campus'),
+  ('Library Lawns', 'Campus')
+) AS source(name, campus_zone)
+WHERE NOT EXISTS (SELECT 1 FROM buildings b WHERE b.name = source.name);
 
 INSERT INTO menu_items (name, price_cents, is_available)
 VALUES
