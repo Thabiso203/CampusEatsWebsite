@@ -652,7 +652,7 @@
      STEP 4 — CONDITIONAL "OTHER" LOCATION FIELD
   ========================================================= */
 
-  const API_BASE = 'https://campus-eats-yp37.onrender.com';
+  const API_BASE = window.CAMPUS_EATS_API_BASE || 'https://campus-eats-test-api.onrender.com';
   let catalogue = null;
   const buildingSelect = document.getElementById("buildingSelect");
   const locationDescBlock = document.getElementById("locationDescBlock");
