@@ -361,7 +361,7 @@
   <div class="auth-card">
     <span class="auth-eyebrow">Wits University · Thuma Mina</span>
     <h1 class="auth-title">Create Account</h1>
-    <p class="auth-subtext">Sign up with your phone number to start ordering from Tubatsi Grill House — cash or bank transfer, no card needed.</p>
+    <p class="auth-subtext">Sign up with your email and phone number to start ordering from Tubatsi Grill House — cash or bank transfer, no card needed.</p>
 
     <div class="form-alert" id="formAlert"></div>
     <div class="form-success" id="formSuccess"></div>
@@ -374,6 +374,12 @@
       </div>
 
       <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input class="form-input" type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+        <div class="field-error" id="emailError">Enter a valid email address.</div>
+      </div>
+
+      <div class="form-group">
         <label class="form-label" for="phone">Phone Number</label>
         <input class="form-input" type="tel" id="phone" name="phone" placeholder="e.g. 0721234567" autocomplete="tel" required>
         <div class="field-hint">This will be your username. Format: 10 digits, e.g. 0721234567.</div>
@@ -382,7 +388,7 @@
 
       <div class="form-group">
         <label class="form-label" for="password">Password</label>
-        <input class="form-input" type="password" id="password" name="password" placeholder="At least 6 characters" autocomplete="new-password" required>
+        <input class="form-input" type="password" id="password" name="password" placeholder="At least 8 characters" autocomplete="new-password" required>
         <div class="field-error" id="passwordError">Password must be at least 6 characters.</div>
       </div>
 
@@ -399,111 +405,73 @@
   </div>
 </main>
 
-<!-- ============ MOCK AUTH SCRIPT (placeholder — replace with real backend) ============ -->
+<!-- ============ BACKEND AUTH ============ -->
 <script>
-  (function () {
-    var form = document.getElementById('registerForm');
-    var fullNameInput = document.getElementById('fullName');
-    var phoneInput = document.getElementById('phone');
-    var passwordInput = document.getElementById('password');
-    var confirmPasswordInput = document.getElementById('confirmPassword');
+(function () {
+  const API_BASE = 'https://campus-eats-yp37.onrender.com';
+  const form = document.getElementById('registerForm');
+  const fullNameInput = document.getElementById('fullName');
+  const emailInput = document.getElementById('email');
+  const phoneInput = document.getElementById('phone');
+  const passwordInput = document.getElementById('password');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+  const formAlert = document.getElementById('formAlert');
+  const formSuccess = document.getElementById('formSuccess');
 
-    var fullNameError = document.getElementById('fullNameError');
-    var phoneError = document.getElementById('phoneError');
-    var passwordError = document.getElementById('passwordError');
-    var confirmPasswordError = document.getElementById('confirmPasswordError');
+  function normalizePhone(value) { return value.replace(/[\\s-]/g, ''); }
 
-    var formAlert = document.getElementById('formAlert');
-    var formSuccess = document.getElementById('formSuccess');
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    formAlert.classList.remove('visible');
+    formSuccess.classList.remove('visible');
 
-    // South African-friendly phone format: 10 digits, starting with 0
-    // (accepts spaces/dashes, then normalizes to digits only)
-    var PHONE_REGEX = /^0\d{9}$/;
+    const fullName = fullNameInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+    const phone = normalizePhone(phoneInput.value.trim());
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
 
-    function clearErrors() {
-      [fullNameInput, phoneInput, passwordInput, confirmPasswordInput].forEach(function (el) {
-        el.classList.remove('input-error');
+    if (fullName.length < 2 || !emailInput.checkValidity() || !/^0\\d{9}$/.test(phone)) {
+      formAlert.textContent = 'Enter your name, a valid email address, and a 10-digit South African phone number.';
+      formAlert.classList.add('visible');
+      return;
+    }
+    if (password.length < 8) {
+      formAlert.textContent = 'Your password must be at least 8 characters.';
+      formAlert.classList.add('visible');
+      return;
+    }
+    if (password !== confirmPassword) {
+      formAlert.textContent = 'Your passwords do not match.';
+      formAlert.classList.add('visible');
+      return;
+    }
+
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    button.textContent = 'Creating account…';
+    try {
+      const response = await fetch(API_BASE + '/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, email, phone, password })
       });
-      [fullNameError, phoneError, passwordError, confirmPasswordError].forEach(function (el) {
-        el.classList.remove('visible');
-      });
-      formAlert.classList.remove('visible');
-      formSuccess.classList.remove('visible');
-    }
-
-    function showFieldError(input, errorEl) {
-      input.classList.add('input-error');
-      errorEl.classList.add('visible');
-    }
-
-    function normalizePhone(raw) {
-      return raw.replace(/[\s-]/g, '');
-    }
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      clearErrors();
-
-      var fullName = fullNameInput.value.trim();
-      var phone = normalizePhone(phoneInput.value.trim());
-      var password = passwordInput.value;
-      var confirmPassword = confirmPasswordInput.value;
-
-      var isValid = true;
-
-      if (fullName.length < 2) {
-        showFieldError(fullNameInput, fullNameError);
-        isValid = false;
-      }
-
-      if (!PHONE_REGEX.test(phone)) {
-        showFieldError(phoneInput, phoneError);
-        isValid = false;
-      }
-
-      if (password.length < 6) {
-        showFieldError(passwordInput, passwordError);
-        isValid = false;
-      }
-
-      if (password !== confirmPassword || confirmPassword.length === 0) {
-        showFieldError(confirmPasswordInput, confirmPasswordError);
-        isValid = false;
-      }
-
-      if (!isValid) {
-        formAlert.textContent = 'Please fix the highlighted fields.';
-        formAlert.classList.add('visible');
-        return;
-      }
-
-      // ---- MOCK LOCALSTORAGE AUTH (placeholder until backend integration) ----
-      var existingUsersRaw = localStorage.getItem('campusEatsUsers');
-      var existingUsers = existingUsersRaw ? JSON.parse(existingUsersRaw) : {};
-
-      if (existingUsers[phone]) {
-        formAlert.textContent = 'An account with this phone number already exists.';
-        formAlert.classList.add('visible');
-        return;
-      }
-
-      existingUsers[phone] = {
-        fullName: fullName,
-        phone: phone,
-        password: password // NOTE: plaintext mock only — real backend must hash passwords
-      };
-
-      localStorage.setItem('campusEatsUsers', JSON.stringify(existingUsers));
-      localStorage.setItem('campusEatsCurrentUser', JSON.stringify({ fullName: fullName, phone: phone }));
-
-      formSuccess.textContent = 'Account created! Redirecting you home...';
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Registration failed.');
+      localStorage.setItem('campusEatsToken', data.token);
+      localStorage.setItem('campusEatsCurrentUser', JSON.stringify(data.customer));
+      formSuccess.textContent = 'Account created. Opening the menu…';
       formSuccess.classList.add('visible');
-
-      setTimeout(function () {
-        window.location.href = 'campuseats-homepage (2).html';
-      }, 1200);
-    });
-  })();
+      window.location.href = 'campuseats-menu.html';
+    } catch (error) {
+      formAlert.textContent = error.message || 'Could not connect to Campus Eats. Please try again.';
+      formAlert.classList.add('visible');
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Register';
+    }
+  });
+})();
 </script>
 
 </body>
