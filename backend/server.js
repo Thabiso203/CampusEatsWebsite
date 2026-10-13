@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
 const staffRoutes = require('./routes/staff');
+const catalogRoutes = require('./routes/catalog');
 const { startOrderTimeoutCron } = require('./utils/cron');
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/auth', authLimiter);
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/catalog', catalogRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/staff', staffRoutes);
 
