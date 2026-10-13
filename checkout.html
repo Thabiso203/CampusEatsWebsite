@@ -488,7 +488,7 @@
             </div>
           </label>
           <label class="radio-card" data-radio-card>
-            <input type="radio" name="paymentMethod" value="transaction">
+            <input type="radio" name="paymentMethod" value="bank_transfer">
             <div class="radio-card-text">
               <div class="rc-title">Transaction on Delivery</div>
               <div class="rc-sub">Bank transfer / e-wallet, confirmed on arrival</div>
@@ -652,6 +652,8 @@
      STEP 4 — CONDITIONAL "OTHER" LOCATION FIELD
   ========================================================= */
 
+  const API_BASE = 'https://campus-eats-yp37.onrender.com';
+  let catalogue = null;
   const buildingSelect = document.getElementById("buildingSelect");
   const locationDescBlock = document.getElementById("locationDescBlock");
   const locationDesc = document.getElementById("locationDesc");
@@ -670,6 +672,27 @@
 
   buildingSelect.addEventListener("change", toggleLocationDesc);
   toggleLocationDesc();
+
+  async function loadCatalogue() {
+    try {
+      const response = await fetch(API_BASE + '/api/catalog');
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not load menu data.');
+      catalogue = data;
+      buildingSelect.innerHTML = '<option value="" selected disabled>Select a building…</option>';
+      data.buildings.forEach(function (building) {
+        const option = document.createElement('option');
+        option.value = building.id;
+        option.textContent = building.name;
+        buildingSelect.appendChild(option);
+      });
+      toggleLocationDesc();
+    } catch (error) {
+      catalogue = null;
+      showError('Could not connect to the Campus Eats menu service. Refresh the page and try again.');
+    }
+  }
+  loadCatalogue();
 
   /* =========================================================
      STEP 5 — PHOTO UPLOAD PREVIEW
@@ -714,58 +737,89 @@
     errorBox.textContent = "";
   }
 
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async function (e) {
     e.preventDefault();
     clearError();
 
-    const selectedPayment = form.querySelector('input[name="paymentMethod"]:checked');
-    const building = buildingSelect.value;
-
+    const token = localStorage.getItem('campusEatsToken');
+    if (!token) {
+      showError('Please sign in or create an account before placing an order.');
+      setTimeout(() => { window.location.href = 'login.html'; }, 900);
+      return;
+    }
+    if (!catalogue) {
+      showError('The menu service is not ready yet. Please refresh and try again.');
+      return;
+    }
     if (cartItems.length === 0) {
-      showError("Your cart is empty. Return to the menu and add food before placing an order.");
+      showError('Your cart is empty. Return to the menu and add food before placing an order.');
       return;
     }
 
+    const selectedPayment = form.querySelector('input[name="paymentMethod"]:checked');
+    const buildingId = buildingSelect.value;
+    const buildingName = buildingSelect.options[buildingSelect.selectedIndex]?.textContent || '';
     if (!selectedPayment) {
-      showError("Please choose a payment method before placing your order.");
+      showError('Please choose a payment method before placing your order.');
       return;
     }
-
-    if (!building) {
-      showError("Please select a delivery location before placing your order.");
+    if (!buildingId) {
+      showError('Please select a delivery location before placing your order.');
       return;
     }
-
-    if (building === "Other" && locationDesc.value.trim() === "") {
-      showError("Please describe your delivery location so our runner can find you.");
+    const isOther = buildingName.toLowerCase().includes('custom location');
+    const locationDetail = isOther
+      ? locationDesc.value.trim()
+      : document.getElementById('locationNote').value.trim();
+    if (isOther && !locationDetail) {
+      showError('Please describe your delivery location so our runner can find you.');
       locationDesc.focus();
       return;
     }
 
-    // ---- build mock order payload ----
-    const order = {
-      items: cartItems,
-      totals: currentTotals,
-      paymentMethod: selectedPayment.value,
-      building: building,
-      locationDetail: building === "Other" ? locationDesc.value.trim() : document.getElementById("locationNote").value.trim(),
-      hasPhoto: photoInput.files.length > 0,
-      placedAt: new Date().toISOString()
-    };
-
-    try {
-      localStorage.setItem("campusEatsLastOrder", JSON.stringify(order));
-    } catch (e) {
-      // storage unavailable — continue anyway, this is a mock flow
+    const apiItems = [];
+    for (const cartItem of cartItems) {
+      const match = catalogue.menuItems.find(item => item.name.toLowerCase() === String(cartItem.name).toLowerCase());
+      if (!match) {
+        showError('We could not find "' + cartItem.name + '" in the live menu. Please return to the menu and try again.');
+        return;
+      }
+      apiItems.push({ menuItemId: match.id, quantity: Number(cartItem.qty) });
     }
 
     placeOrderBtn.disabled = true;
-    placeOrderBtn.textContent = "Placing Order…";
-
-    // mock redirect to order tracking
-    setTimeout(() => {
-      window.location.href = "order%20tracking.html";
-    }, 600);
+    placeOrderBtn.textContent = 'Placing Order…';
+    try {
+      const response = await fetch(API_BASE + '/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({
+          buildingId,
+          roomNumber: locationDetail || null,
+          paymentMethod: selectedPayment.value,
+          items: apiItems
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('campusEatsToken');
+          localStorage.removeItem('campusEatsCurrentUser');
+          throw new Error('Your session has expired. Please sign in again.');
+        }
+        throw new Error(data.error || 'Your order could not be placed.');
+      }
+      localStorage.setItem('campusEatsLastOrder', JSON.stringify(data.order));
+      localStorage.removeItem('campusEatsCart');
+      window.location.href = 'order%20tracking.html?orderId=' + encodeURIComponent(data.order.id);
+    } catch (error) {
+      showError(error.message || 'Could not connect to Campus Eats. Your order has not been confirmed.');
+      placeOrderBtn.disabled = false;
+      placeOrderBtn.textContent = 'Place Order';
+    }
   });
 
 })();
