@@ -85,7 +85,7 @@ FROM (VALUES
   ('Wors Roll', 3200, TRUE),
   ('Wors and Chip Roll', 3800, TRUE),
   ('Wors and Chips', 4800, TRUE)
-) AS source(name, price_cents)
+ ) AS source(name, price_cents, is_available)
 WHERE NOT EXISTS (SELECT 1 FROM menu_items m WHERE m.name = source.name);
 
 -- Update prices for existing rows to match the current public menu.
