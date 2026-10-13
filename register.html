@@ -418,7 +418,7 @@
   const formAlert = document.getElementById('formAlert');
   const formSuccess = document.getElementById('formSuccess');
 
-  function normalizePhone(value) { return value.replace(/[\\s-]/g, ''); }
+  function normalizePhone(value) { return value.replace(/[\s-]/g, ''); }
 
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -431,7 +431,7 @@
     const password = passwordInput.value;
     const confirmPassword = confirmPasswordInput.value;
 
-    if (fullName.length < 2 || !emailInput.checkValidity() || !/^0\\d{9}$/.test(phone)) {
+    if (fullName.length < 2 || !emailInput.checkValidity() || !/^0\d{9}$/.test(phone)) {
       formAlert.textContent = 'Enter your name, a valid email address, and a 10-digit South African phone number.';
       formAlert.classList.add('visible');
       return;
