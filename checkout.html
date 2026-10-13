@@ -659,6 +659,12 @@
   const locationDesc = document.getElementById("locationDesc");
   const optionalNoteBlock = document.getElementById("optionalNoteBlock");
 
+    const errorBox = document.getElementById("formError");
+  function clearError() {
+    errorBox.classList.remove("show");
+    errorBox.textContent = "";
+  }
+  
   function toggleLocationDesc() {
     const selectedBuildingName = buildingSelect.options[buildingSelect.selectedIndex]?.textContent || "";   
       
@@ -725,7 +731,7 @@
   ========================================================= */
 
   const form = document.getElementById("checkoutForm");
-  const errorBox = document.getElementById("formError");
+  
   const placeOrderBtn = document.getElementById("placeOrderBtn");
 
   function showError(message) {
@@ -733,11 +739,7 @@
     errorBox.classList.add("show");
     errorBox.scrollIntoView({ behavior: "smooth", block: "center" });
   }
-
-  function clearError() {
-    errorBox.classList.remove("show");
-    errorBox.textContent = "";
-  }
+  
 
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
