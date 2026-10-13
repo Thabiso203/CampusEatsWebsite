@@ -18,7 +18,8 @@ FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM buildings b WHERE b.name = source.name);
 
 INSERT INTO menu_items (name, price_cents, is_available)
-VALUES
+SELECT source.name, source.price_cents, TRUE
+FROM (VALUES
   ('Jumbo Burger', 4200, TRUE),
   ('Chicken Burger', 4200, TRUE),
   ('Jumbo Cheese Burger', 4800, TRUE),
@@ -84,7 +85,8 @@ VALUES
   ('Wors Roll', 3200, TRUE),
   ('Wors and Chip Roll', 3800, TRUE),
   ('Wors and Chips', 4800, TRUE)
-ON CONFLICT DO NOTHING;
+) AS source(name, price_cents)
+WHERE NOT EXISTS (SELECT 1 FROM menu_items m WHERE m.name = source.name);
 
 -- Update prices for existing rows to match the current public menu.
 UPDATE menu_items SET price_cents = 4200, is_available = TRUE WHERE name = 'Jumbo Burger';
