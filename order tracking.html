@@ -627,113 +627,108 @@
     </main>
 
     <script>
-        (function() {
-            'use strict';
+(function () {
+  'use strict';
+  const API_BASE = 'https://campus-eats-yp37.onrender.com';
+  const orderId = new URLSearchParams(window.location.search).get('orderId');
+  const token = localStorage.getItem('campusEatsToken');
+  const pill = document.getElementById('statusPill');
+  const orderIdEl = document.getElementById('orderId');
+  const banner = document.getElementById('cancelledBanner');
+  const timeline = document.getElementById('timeline');
+  const demoControls = document.querySelector('.demo-controls');
+  const demoNote = document.querySelector('.demo-note');
+  const metaBlocks = document.querySelectorAll('.order-meta .meta-block');
+  const statusLabels = { pending: 'Pending', accepted: 'Order Accepted', delivered: 'Delivered', cancelled: 'Cancelled' };
+  let timer = null;
 
-            var STATES = ['pending', 'confirmed', 'placed', 'ready', 'delivery', 'delivered'];
-            var STATE_LABELS = {
-                pending: 'Pending',
-                confirmed: 'Order Confirmed',
-                placed: 'Placed at TUBATSI',
-                ready: 'Food Ready',
-                delivery: 'Out for Delivery',
-                delivered: 'Delivered',
-                cancelled: 'Cancelled'
-            };
-            var TICK_MS = 4000; // advance one state every 4 seconds
+  if (demoControls) demoControls.style.display = 'none';
+  if (demoNote) demoNote.style.display = 'none';
 
-            var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
-            var pill = document.getElementById('statusPill');
-            var restartBtn = document.getElementById('restartBtn');
-            var cancelBtn = document.getElementById('cancelBtn');
+  function showMessage(message) {
+    pill.textContent = message;
+    pill.classList.remove('delivered', 'cancelled');
+  }
 
-            var currentIndex = 0;
-            var cancelled = false;
-            var timer = null;
+  function renderOrder(order) {
+    orderIdEl.textContent = '#' + String(order.id).slice(0, 8).toUpperCase();
+    if (metaBlocks[1]) metaBlocks[1].querySelector('.meta-value').textContent = order.building_name || order.buildingName || 'Delivery location';
+    if (metaBlocks[2]) {
+      const room = order.room_number || '';
+      metaBlocks[2].querySelector('.meta-value').textContent = room || (order.building_name || 'Delivery location');
+    }
 
-            function formatTime(date) {
-                var h = String(date.getHours()).padStart(2, '0');
-                var m = String(date.getMinutes()).padStart(2, '0');
-                return h + ':' + m;
-            }
+    const status = String(order.status || 'pending').toLowerCase();
+    pill.textContent = statusLabels[status] || status;
+    pill.classList.toggle('cancelled', status === 'cancelled');
+    pill.classList.toggle('delivered', status === 'delivered');
+    document.body.classList.toggle('is-cancelled', status === 'cancelled');
+    banner.style.display = status === 'cancelled' ? 'block' : 'none';
 
-            function render() {
-                steps.forEach(function(step, i) {
-                    step.classList.remove('done', 'current');
-                    if (cancelled) return;
-                    if (i < currentIndex) {
-                        step.classList.add('done');
-                    } else if (i === currentIndex) {
-                        // final state renders as fully done, not "in progress"
-                        step.classList.add(currentIndex === STATES.length - 1 ? 'done' : 'current');
-                    }
-                });
+    const steps = Array.from(timeline.querySelectorAll('.step'));
+    const pending = steps.find(s => s.dataset.state === 'pending');
+    const accepted = steps.find(s => s.dataset.state === 'confirmed');
+    const delivered = steps.find(s => s.dataset.state === 'delivered');
+    steps.forEach(s => { s.style.display = 'none'; s.classList.remove('done', 'current'); });
+    if (pending) pending.style.display = '';
+    if (accepted) accepted.style.display = '';
+    if (delivered) {
+      delivered.style.display = '';
+      timeline.appendChild(delivered);
+    }
+    const shown = [pending, accepted, delivered].filter(Boolean);
+    const activeIndex = status === 'pending' ? 0 : status === 'accepted' ? 1 : status === 'delivered' ? 2 : -1;
+    shown.forEach((step, index) => {
+      const timeEl = step.querySelector('[data-time]');
+      if (index < activeIndex) step.classList.add('done');
+      else if (index === activeIndex) step.classList.add(status === 'delivered' ? 'done' : 'current');
+      if (timeEl && !timeEl.textContent && index <= activeIndex) timeEl.textContent = new Date(order.updated_at || order.created_at || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    });
 
-                document.body.classList.toggle('is-cancelled', cancelled);
+    let summary = document.getElementById('liveOrderDetails');
+    if (!summary) {
+      summary = document.createElement('section');
+      summary.id = 'liveOrderDetails';
+      summary.className = 'timeline-card';
+      summary.innerHTML = '<h2>Order Details</h2><div id="liveItems"></div><p id="liveTotal"></p><p id="livePayment"></p><p id="liveRefresh" aria-live="polite"></p>';
+      timeline.parentElement.insertAdjacentElement('afterend', summary);
+    }
+    const items = Array.isArray(order.items) ? order.items : [];
+    document.getElementById('liveItems').innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('p');
+      row.textContent = (item.item_name || item.itemName || 'Item') + ' × ' + item.quantity;
+      document.getElementById('liveItems').appendChild(row);
+    });
+    document.getElementById('liveTotal').textContent = 'Total: R' + (Number(order.total_cents || 0) / 100).toFixed(2);
+    document.getElementById('livePayment').textContent = 'Payment: ' + (order.payment_method === 'bank_transfer' ? 'Bank transfer on delivery' : 'Cash on delivery');
+    document.getElementById('liveRefresh').textContent = status === 'delivered' || status === 'cancelled' ? 'This order is ' + status + '.' : 'Status refreshes automatically.';
+  }
 
-                var key = cancelled ? 'cancelled' : STATES[currentIndex];
-                pill.textContent = STATE_LABELS[key];
-                pill.classList.toggle('cancelled', cancelled);
-                pill.classList.toggle('delivered', !cancelled && key === 'delivered');
-            }
+  async function refresh() {
+    if (!orderId || !token) {
+      showMessage(!token ? 'Please sign in to view your order' : 'No order selected');
+      return;
+    }
+    try {
+      const response = await fetch(API_BASE + '/api/orders/' + encodeURIComponent(orderId), {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not load this order.');
+      renderOrder(data.order);
+      if (['delivered', 'cancelled'].includes(data.order.status) && timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    } catch (error) {
+      showMessage(error.message || 'Could not connect to the order service');
+    }
+  }
 
-            function stampTime(index) {
-                var timeEl = steps[index].querySelector('[data-time]');
-                if (timeEl && !timeEl.textContent) {
-                    timeEl.textContent = formatTime(new Date());
-                }
-            }
-
-            function tick() {
-                if (cancelled) return;
-                if (currentIndex < STATES.length - 1) {
-                    currentIndex++;
-                    stampTime(currentIndex);
-                    render();
-                }
-                if (currentIndex >= STATES.length - 1) {
-                    stop();
-                }
-            }
-
-            function start() {
-                stop();
-                timer = setInterval(tick, TICK_MS);
-            }
-
-            function stop() {
-                if (timer) {
-                    clearInterval(timer);
-                    timer = null;
-                }
-            }
-
-            function restart() {
-                stop();
-                cancelled = false;
-                currentIndex = 0;
-                steps.forEach(function(step) {
-                    var t = step.querySelector('[data-time]');
-                    if (t) t.textContent = '';
-                });
-                stampTime(0);
-                render();
-                start();
-            }
-
-            function cancel() {
-                stop();
-                cancelled = true;
-                render();
-            }
-
-            restartBtn.addEventListener('click', restart);
-            cancelBtn.addEventListener('click', cancel);
-
-            // kick off the demo
-            restart();
-        })();
-    </script>
-
+  refresh();
+  timer = setInterval(refresh, 7000);
+})();
+</script>
 </body>
 </html>
