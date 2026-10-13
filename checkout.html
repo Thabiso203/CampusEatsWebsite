@@ -585,12 +585,8 @@
     } catch (e) {
       // ignore malformed storage, fall back to dummy data
     }
-    // ---- dummy fallback cart ----
-    return [
-      { name: "Chicken Burger", price: 50, qty: 2 },
-      { name: "Mega Kota", price: 50, qty: 1 },
-      { name: "Sunshine Breakfast", price: 45, qty: 1 }
-    ];
+    // Never display sample food as if it were the customer's real order.
+    return [];
   }
 
   cartItems = loadCart();
@@ -725,6 +721,11 @@
     const selectedPayment = form.querySelector('input[name="paymentMethod"]:checked');
     const building = buildingSelect.value;
 
+    if (cartItems.length === 0) {
+      showError("Your cart is empty. Return to the menu and add food before placing an order.");
+      return;
+    }
+
     if (!selectedPayment) {
       showError("Please choose a payment method before placing your order.");
       return;
@@ -763,7 +764,7 @@
 
     // mock redirect to order tracking
     setTimeout(() => {
-      window.location.href = "order-tracking.html";
+      window.location.href = "order%20tracking.html";
     }, 600);
   });
 
