@@ -12,7 +12,8 @@ FROM (VALUES
   ('East Campus Residences', 'Residences'),
   ('Matrix Mall', 'Retail'),
   ('Wits Junction', 'Campus'),
-  ('Library Lawns', 'Campus')
+  ('Library Lawns', 'Campus'),
+  ('Other / Custom Location', 'Campus')
 ) AS source(name, campus_zone)
 WHERE NOT EXISTS (SELECT 1 FROM buildings b WHERE b.name = source.name);
 
