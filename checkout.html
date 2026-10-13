@@ -660,7 +660,7 @@
   const optionalNoteBlock = document.getElementById("optionalNoteBlock");
 
   function toggleLocationDesc() {
-    if (buildingSelect.value === "Other") {
+    const selectedBuildingName = buildingSelect.options[buildingSelect.selectedIndex]?.textContent || "";\n    if (selectedBuildingName.toLowerCase().includes("custom location")) {
       locationDescBlock.classList.add("show");
       optionalNoteBlock.style.display = "none";
     } else {
