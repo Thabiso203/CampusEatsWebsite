@@ -361,9 +361,9 @@
 
     <form id="loginForm" novalidate>
       <div class="form-group">
-        <label class="form-label" for="phone">Phone Number</label>
-        <input class="form-input" type="tel" id="phone" name="phone" placeholder="e.g. 0721234567" autocomplete="tel" required>
-        <div class="field-error" id="phoneError">Please enter your phone number.</div>
+        <label class="form-label" for="email">Email Address</label>
+        <input class="form-input" type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required>
+        <div class="field-error" id="emailError">Enter a valid email address.</div>
       </div>
 
       <div class="form-group">
@@ -379,85 +379,56 @@
   </div>
 </main>
 
-<!-- ============ MOCK AUTH SCRIPT (placeholder — replace with real backend) ============ -->
+<!-- ============ BACKEND AUTH ============ -->
 <script>
-  (function () {
-    var form = document.getElementById('loginForm');
-    var phoneInput = document.getElementById('phone');
-    var passwordInput = document.getElementById('password');
+(function () {
+  const API_BASE = 'https://campus-eats-yp37.onrender.com';
+  const form = document.getElementById('loginForm');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const formAlert = document.getElementById('formAlert');
+  const formSuccess = document.getElementById('formSuccess');
 
-    var phoneError = document.getElementById('phoneError');
-    var passwordError = document.getElementById('passwordError');
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    formAlert.classList.remove('visible');
+    formSuccess.classList.remove('visible');
+    emailInput.classList.remove('input-error');
+    passwordInput.classList.remove('input-error');
 
-    var formAlert = document.getElementById('formAlert');
-    var formSuccess = document.getElementById('formSuccess');
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
+    if (!email || !emailInput.checkValidity() || !password) {
+      formAlert.textContent = 'Enter a valid email address and password.';
+      formAlert.classList.add('visible');
+      return;
+    }
 
-    function clearErrors() {
-      [phoneInput, passwordInput].forEach(function (el) {
-        el.classList.remove('input-error');
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    button.textContent = 'Signing in…';
+    try {
+      const response = await fetch(API_BASE + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, as: 'customer' })
       });
-      [phoneError, passwordError].forEach(function (el) {
-        el.classList.remove('visible');
-      });
-      formAlert.classList.remove('visible');
-      formSuccess.classList.remove('visible');
-    }
-
-    function showFieldError(input, errorEl) {
-      input.classList.add('input-error');
-      errorEl.classList.add('visible');
-    }
-
-    function normalizePhone(raw) {
-      return raw.replace(/[\s-]/g, '');
-    }
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      clearErrors();
-
-      var phone = normalizePhone(phoneInput.value.trim());
-      var password = passwordInput.value;
-
-      var isValid = true;
-
-      if (phone.length === 0) {
-        showFieldError(phoneInput, phoneError);
-        isValid = false;
-      }
-
-      if (password.length === 0) {
-        showFieldError(passwordInput, passwordError);
-        isValid = false;
-      }
-
-      if (!isValid) {
-        return;
-      }
-
-      // ---- MOCK LOCALSTORAGE AUTH (placeholder until backend integration) ----
-      var existingUsersRaw = localStorage.getItem('campusEatsUsers');
-      var existingUsers = existingUsersRaw ? JSON.parse(existingUsersRaw) : {};
-      var account = existingUsers[phone];
-
-      if (!account || account.password !== password) {
-        formAlert.textContent = 'Incorrect phone number or password.';
-        formAlert.classList.add('visible');
-        phoneInput.classList.add('input-error');
-        passwordInput.classList.add('input-error');
-        return;
-      }
-
-      localStorage.setItem('campusEatsCurrentUser', JSON.stringify({ fullName: account.fullName, phone: account.phone }));
-
-      formSuccess.textContent = 'Welcome back, ' + account.fullName + '! Redirecting...';
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Sign in failed.');
+      localStorage.setItem('campusEatsToken', data.token);
+      localStorage.setItem('campusEatsCurrentUser', JSON.stringify(data.customer));
+      formSuccess.textContent = 'Signed in successfully. Opening the menu…';
       formSuccess.classList.add('visible');
-
-      setTimeout(function () {
-        window.location.href = 'campuseats-homepage (2).html';
-      }, 1000);
-    });
-  })();
+      window.location.href = 'campuseats-menu.html';
+    } catch (error) {
+      formAlert.textContent = error.message || 'Could not connect to Campus Eats. Please try again.';
+      formAlert.classList.add('visible');
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Sign In';
+    }
+  });
+})();
 </script>
 
 </body>
