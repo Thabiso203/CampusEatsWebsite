@@ -823,7 +823,7 @@
         <span id="cartTotal">R0</span>
       </div>
       <button class="checkout-btn" id="checkoutBtn">Checkout</button>
-      <p class="checkout-note">Order processing coming soon — checkout is a placeholder for now.</p>
+      <p class="checkout-note">Review your order and choose how to pay on delivery.</p>
     </div>
   </div>
 </div>
@@ -983,9 +983,27 @@
     if (e.target === cartOverlay) cartOverlay.classList.remove("open");
   });
 
-  // Placeholder checkout - order processing/vendor coordination to be added later
+  // Save the selected items before navigating to checkout.
   document.getElementById("checkoutBtn").addEventListener("click", () => {
-    alert("Checkout isn't connected yet — order processing with the vendor is still being finalised. Your cart has been kept for now.");
+    const cartItems = Object.values(cart)
+      .filter(item => item.qty > 0)
+      .map(item => ({
+        name: item.name,
+        price: Number(item.price),
+        qty: Number(item.qty)
+      }));
+
+    if (cartItems.length === 0) {
+      alert("Your cart is empty. Please add food items before checking out.");
+      return;
+    }
+
+    try {
+      localStorage.setItem("campusEatsCart", JSON.stringify(cartItems));
+      window.location.href = "checkout.html";
+    } catch (error) {
+      alert("Your cart could not be saved. Please check your browser settings and try again.");
+    }
   });
 })();
 </script>
