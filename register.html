@@ -408,7 +408,7 @@
 <!-- ============ BACKEND AUTH ============ -->
 <script>
 (function () {
-  const API_BASE = 'https://campus-eats-yp37.onrender.com';
+  const API_BASE = window.CAMPUS_EATS_API_BASE || 'https://campus-eats-test-api.onrender.com';
   const form = document.getElementById('registerForm');
   const fullNameInput = document.getElementById('fullName');
   const emailInput = document.getElementById('email');
