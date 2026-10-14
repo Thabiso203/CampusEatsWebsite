@@ -38,17 +38,50 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
 .empty{background:white;border-radius:12px;padding:28px;text-align:center;line-height:1.6}
 #notificationToast{display:none;position:fixed;right:18px;bottom:18px;z-index:1000;max-width:min(420px,calc(100vw - 36px));padding:15px 18px;background:var(--hunter);color:white;border-left:4px solid var(--gold);border-radius:10px;box-shadow:0 8px 28px #0003;line-height:1.45}
 #notificationToast.show{display:block}
-@media(max-width:520px){h1{font-size:32px}.order{padding:15px}.links{gap:12px}}
+.feedback-button{background:#e8f0e6;border:1px solid #b5c9b0;color:var(--hunter);font-weight:700}
+.feedback-modal{display:none;position:fixed;inset:0;z-index:1200;background:#171b17b8;padding:18px;align-items:center;justify-content:center}
+.feedback-modal.open{display:flex}
+.feedback-panel{width:min(480px,100%);max-height:90vh;overflow:auto;background:var(--white);border-radius:16px;padding:24px;box-shadow:0 18px 60px #0005}
+.feedback-panel h2{font:700 27px 'Oswald',sans-serif;color:var(--hunter);margin-bottom:6px}
+.feedback-panel p{font-size:14px;color:#645d50;margin-bottom:16px}
+.feedback-panel label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+.feedback-panel select,.feedback-panel textarea{width:100%;border:1px solid #cfc8b9;border-radius:8px;padding:11px;font:inherit;background:white}
+.feedback-panel textarea{min-height:100px;resize:vertical}
+.feedback-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+.feedback-status{min-height:20px;font-size:13px;color:var(--brick);margin-top:10px}
+@media(max-width:520px){h1{font-size:32px}.order{padding:15px}.links{gap:12px}.feedback-panel{padding:18px}}
 </style>
 </head>
 <body>
-<header><div class="nav"><a class="brand" href="campuseats-menu.html">CAMPUS EATS</a><nav class="links" aria-label="Main navigation"><a href="campuseats-menu.html">Menu</a><a href="my-orders.html">Track Order</a><a href="my-orders.html" aria-current="page">My Orders</a><a href="login.html" id="accountNav">Sign In</a><a href="#" id="logoutNav" hidden>Log Out</a></nav></div></header>
+<header><div class="nav"><a class="brand" href="campuseats-menu.html">CAMPUS EATS</a><nav class="links" aria-label="Main navigation"><a href="campuseats-menu.html">Menu</a><a href="my-orders.html">Track Order</a><a href="my-orders.html" aria-current="page">My Orders</a><a href="help.html">Help</a><a href="login.html" id="accountNav">Sign In</a><a href="#" id="logoutNav" hidden>Log Out</a></nav></div></header>
 <main>
 <section class="hero"><span class="eyebrow">Your Campus Eats account</span><h1>My Orders</h1><p class="subtitle">See your recent orders and check their latest status.</p></section>
 <div class="actions"><button class="primary" id="refreshBtn" type="button">Refresh Orders</button><button class="secondary" id="notificationBtn" type="button">Enable Notifications</button><a class="button secondary" href="campuseats-menu.html">Browse Menu</a></div>
 <div id="message" role="status" aria-live="polite">Loading your orders…</div><div id="notificationToast" role="status" aria-live="polite"></div>
 <section id="orders" aria-label="Your order history"></section>
 </main>
+<div class="feedback-modal" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+  <form class="feedback-panel" id="feedbackForm">
+    <h2 id="feedbackTitle">How was your order?</h2>
+    <p>Your order has been delivered. Tell us how we did so we can improve Campus Eats.</p>
+    <label for="feedbackRating">Your rating</label>
+    <select id="feedbackRating" required>
+      <option value="">Choose a rating</option>
+      <option value="5">5 — Excellent</option>
+      <option value="4">4 — Good</option>
+      <option value="3">3 — Okay</option>
+      <option value="2">2 — Poor</option>
+      <option value="1">1 — Very poor</option>
+    </select>
+    <label for="feedbackComment">Comments (optional)</label>
+    <textarea id="feedbackComment" maxlength="1000" placeholder="Food, delivery, or ordering experience…"></textarea>
+    <div class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></div>
+    <div class="feedback-actions">
+      <button type="button" class="secondary" id="feedbackLater">Later</button>
+      <button type="submit" class="primary" id="feedbackSubmit">Send Feedback</button>
+    </div>
+  </form>
+</div>
 <script>
 (function(){
   'use strict';
@@ -63,6 +96,14 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
   let firstSuccessfulLoad = true;
   let loading = false;
   let toastTimer = null;
+  let feedbackOrderId = null;
+  let promptedFeedbackOrders = new Set();
+  const feedbackModal = document.getElementById('feedbackModal');
+  const feedbackForm = document.getElementById('feedbackForm');
+  const feedbackRating = document.getElementById('feedbackRating');
+  const feedbackComment = document.getElementById('feedbackComment');
+  const feedbackStatus = document.getElementById('feedbackStatus');
+  const feedbackSubmit = document.getElementById('feedbackSubmit');
   const labels = {pending:'Pending', accepted:'Order Confirmed', delivered:'Delivered', cancelled:'Cancelled'};
   function addText(parent, tag, className, value){
     const el = document.createElement(tag);
@@ -151,10 +192,66 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
         cancel.addEventListener('click',()=>cancelOrder(order.id,cancel));
         bottom.appendChild(cancel);
       }
+      if(order.status==='delivered'){
+        if(order.feedback_submitted){
+          addText(bottom,'span','', 'Feedback submitted ✓');
+        } else {
+          const feedbackButton=document.createElement('button');
+          feedbackButton.type='button';
+          feedbackButton.className='feedback-button';
+          feedbackButton.textContent='Leave Feedback';
+          feedbackButton.addEventListener('click',()=>openFeedback(order.id));
+          bottom.appendChild(feedbackButton);
+        }
+      }
       card.appendChild(bottom);
       ordersEl.appendChild(card);
     });
+    const deliveredWithoutFeedback=orders.find(order=>order.status==='delivered'&&!order.feedback_submitted&&!promptedFeedbackOrders.has(order.id));
+    if(deliveredWithoutFeedback) openFeedback(deliveredWithoutFeedback.id);
   }
+
+  function openFeedback(orderId){
+    feedbackOrderId=orderId;
+    promptedFeedbackOrders.add(orderId);
+    feedbackForm.reset();
+    feedbackStatus.textContent='';
+    feedbackModal.classList.add('open');
+    feedbackRating.focus();
+  }
+
+  function closeFeedback(){
+    feedbackModal.classList.remove('open');
+    feedbackOrderId=null;
+  }
+
+  document.getElementById('feedbackLater').addEventListener('click',closeFeedback);
+  feedbackModal.addEventListener('click',event=>{if(event.target===feedbackModal) closeFeedback();});
+  feedbackForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(!feedbackOrderId) return;
+    const orderId=feedbackOrderId;
+    feedbackSubmit.disabled=true;
+    feedbackSubmit.textContent='Sending…';
+    feedbackStatus.textContent='';
+    try{
+      const response=await fetch(API_BASE+'/api/orders/'+encodeURIComponent(orderId)+'/feedback',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+        body:JSON.stringify({rating:Number(feedbackRating.value),comment:feedbackComment.value.trim()})
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.error||'Could not submit feedback.');
+      showToast('Thank you! Your feedback has been received.');
+      closeFeedback();
+      await loadOrders(true);
+    }catch(error){
+      feedbackStatus.textContent=error.message||'Could not submit feedback. Please try again.';
+    }finally{
+      feedbackSubmit.disabled=false;
+      feedbackSubmit.textContent='Send Feedback';
+    }
+  });
   async function cancelOrder(orderId, button){
     if(!window.confirm('Cancel this order? This cannot be undone.')) return;
     button.disabled=true;
