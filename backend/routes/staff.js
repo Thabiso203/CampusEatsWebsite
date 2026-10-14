@@ -51,6 +51,24 @@ router.get('/orders', verifyToken, requireStaff(), async (req, res) => {
   }
 });
 
+// GET /api/staff/feedback — recent customer feedback, visible to staff only.
+router.get('/feedback', verifyToken, requireStaff(), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT f.order_id, f.rating, f.comment, f.created_at,
+              c.full_name AS customer_name
+       FROM order_feedback f
+       JOIN customers c ON c.id = f.customer_id
+       ORDER BY f.created_at DESC
+       LIMIT 100`
+    );
+    res.json({ feedback: result.rows });
+  } catch (err) {
+    console.error('staff list feedback error', err);
+    res.status(500).json({ error: 'Failed to fetch customer feedback' });
+  }
+});
+
 // Keep the existing POST routes below this point.
 // ------------------------------------------------------------
 // POST /api/staff/orders/:id/accept
