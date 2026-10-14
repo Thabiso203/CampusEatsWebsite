@@ -262,14 +262,20 @@
   }
 
   .menu-item .food-visual-icon {
-    width: 44px;
-    height: 44px;
-    display: grid;
-    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    max-width: 58%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 2px;
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.13);
-    font-size: 27px;
-    flex: 0 0 auto;
+    padding: 5px 7px;
+    font-size: 24px;
+    line-height: 1.2;
+    flex: 0 1 auto;
   }
 
   .menu-item .food-visual-label {
@@ -928,32 +934,123 @@
 
     // Add a lightweight visual header to make the menu cards easier to scan.
     const lowerName = name.toLowerCase();
-    const category = item.closest(".menu-category");
-    const categoryName = category?.querySelector(".category-banner")?.textContent.trim() || "Campus favourite";
-    let foodIcon = "🍽️";
-    if (/burger|cheese|bacon/.test(lowerName)) foodIcon = "🍔";
-    else if (/wrap/.test(lowerName)) foodIcon = "🌯";
-    else if (/kota|gatsby|sandwich/.test(lowerName)) foodIcon = "🥪";
-    else if (/chicken|wings|drumstick/.test(lowerName)) foodIcon = "🍗";
-    else if (/pizza/.test(lowerName)) foodIcon = "🍕";
-    else if (/braai|steak|ribs|beef/.test(lowerName)) foodIcon = "🥩";
-    else if (/breakfast|egg|omelette|toast|pancake/.test(lowerName)) foodIcon = "🍳";
-    else if (/chips|fries|potato/.test(lowerName)) foodIcon = "🍟";
-    else if (/juice|drink|water|cooler|soda/.test(lowerName)) foodIcon = "🥤";
-    else if (/salad|veggie|vegetable/.test(lowerName)) foodIcon = "🥗";
-    else if (/ice cream|cake|dessert|waffle/.test(lowerName)) foodIcon = "🍰";
+    const fullDescription = item.querySelector(".description")?.textContent.trim().toLowerCase() || "";
+    const foodText = lowerName + " " + fullDescription;
+    let foodIcons = ["🍽️"];
+    let visualLabel = name;
+    let visualHint = fullDescription || "Ask us about the ingredients";
+
+    // Show the ingredients that define the dish, rather than a generic plate or category.
+    if (/egg.*tomato|tomato.*egg/.test(lowerName)) {
+      foodIcons = ["🍳", "🍅", "🥪"];
+      visualHint = "Egg + tomato sandwich";
+    } else if (/cheese.*egg.*tomato|egg.*cheese.*tomato/.test(lowerName)) {
+      foodIcons = ["🧀", "🍳", "🍅", "🥪"];
+      visualHint = "Cheese + egg + tomato";
+    } else if (/cheese.*tomato|tomato.*cheese/.test(lowerName)) {
+      foodIcons = ["🧀", "🍅", "🥪"];
+      visualHint = "Cheese + tomato sandwich";
+    } else if (/kota/.test(lowerName) || /makoya/.test(lowerName)) {
+      foodIcons = ["🍞", "🍟", "🌭", "🍳", "🧀"];
+      visualHint = fullDescription || "Bread filled with the listed kota fillings";
+    } else if (/vianna|vienna/.test(foodText)) {
+      foodIcons = /chips/.test(foodText) ? ["🌭", "🌭", "🍟"] : ["🌭", "🌭"];
+      visualHint = fullDescription || "Viennas" + (/chips/.test(foodText) ? " + chips" : "");
+    } else if (/burger/.test(lowerName)) {
+      foodIcons = /chicken/.test(lowerName) ? ["🍗", "🥬", "🍔"] : ["🥩", "🧀", "🍔"];
+      visualHint = fullDescription || "Burger";
+    } else if (/wrap/.test(lowerName)) {
+      foodIcons = /chicken/.test(lowerName) ? ["🌯", "🍗", "🥒", "🍅"] : ["🌯", "🥩", "🥒", "🍅"];
+      visualHint = fullDescription || "Filled wrap";
+    } else if (/egg/.test(foodText) && /bacon/.test(foodText)) {
+      foodIcons = ["🍳", "🥓", "🥪"];
+      visualHint = fullDescription || "Egg + bacon roll";
+    } else if (/egg/.test(foodText) && /chips/.test(foodText)) {
+      foodIcons = ["🍳", "🍟", "🥖"];
+      visualHint = fullDescription || "Egg + chips";
+    } else if (/egg/.test(foodText)) {
+      foodIcons = ["🍳", "🥪"];
+      visualHint = fullDescription || "Egg-filled meal";
+    } else if (/chips/.test(foodText) && /chicken|wings|drum/.test(foodText)) {
+      foodIcons = ["🍗", "🍟"];
+      visualHint = fullDescription || "Chicken + chips";
+    } else if (/chips/.test(foodText) && /russian|wors|brisket|lamb|rib|chuck/.test(foodText)) {
+      foodIcons = [/russian/.test(foodText) ? "🌭" : "🥩", "🍟"];
+      visualHint = fullDescription || "Grilled meat + chips";
+    } else if (/chicken/.test(foodText)) {
+      foodIcons = ["🍗", /chips/.test(foodText) ? "🍟" : "🥗"];
+      visualHint = fullDescription || "Chicken";
+    } else if (/ribs/.test(foodText)) {
+      foodIcons = ["🍖", /chips/.test(foodText) ? "🍟" : "🔥"];
+      visualHint = fullDescription || "Grilled ribs";
+    } else if (/brisket|lamb|wors|chuck|braai|grilled/.test(foodText)) {
+      foodIcons = ["🥩", /pap/.test(foodText) ? "🍚" : "🔥", /chips/.test(foodText) ? "🍟" : "🌶️"];
+      visualHint = fullDescription || "Grilled meat";
+    } else if (/chips/.test(foodText)) {
+      foodIcons = ["🍟"];
+      visualHint = fullDescription || "Chips";
+    } else if (/sunshine breakfast|breakfast/.test(lowerName)) {
+      foodIcons = ["🍳", "🌭", "🫘", "🍟"];
+      visualHint = fullDescription || "Breakfast plate";
+    } else if (/sandwich|roll/.test(lowerName)) {
+      foodIcons = ["🥖", "🥪"];
+      visualHint = fullDescription || "Filled roll";
+    } else if (/cheese/.test(foodText)) {
+      foodIcons = ["🧀", "🥪"];
+      visualHint = fullDescription || "Cheese sandwich";
+    }
+
+    // Add honest descriptions for menu items that did not have one yet.
+    const descriptionEl = item.querySelector(".description");
+    const knownDescriptions = {
+      "egg & tomato": "Egg and tomato served together in a sandwich.",
+      "cheese & tomato": "Cheese and tomato served together in a sandwich.",
+      "cheese, egg & tomato": "Cheese, egg and tomato in one sandwich.",
+      "egg & bacon roll": "Egg and bacon served in a roll.",
+      "egg and chip roll": "Egg and chips served in a roll.",
+      "russian and chip roll": "Russian sausage and chips served in a roll.",
+      "russian and egg roll": "Russian sausage and egg served in a roll.",
+      "wors and chip roll": "Wors and chips served in a roll.",
+      "2 x vianna and chips": "Two viennas served with chips.",
+      "russian and chips": "Russian sausage served with chips.",
+      "russian": "Russian sausage, served on its own.",
+      "jumbo russian": "A jumbo Russian sausage, served on its own.",
+      "300g": "300 g ribs.",
+      "300g with chips": "300 g ribs served with chips.",
+      "600g": "600 g ribs.",
+      "lamb chop": "Grilled lamb chop.",
+      "lamb and chips": "Lamb served with chips.",
+      "brisket": "Grilled brisket.",
+      "brisket & chips": "Brisket served with chips.",
+      "chuck": "Grilled chuck.",
+      "wors": "Grilled wors sausage.",
+      "wors roll": "Wors sausage served in a roll.",
+      "wors and chip roll": "Wors and chips served in a roll.",
+      "mini": "Mini portion of chips.",
+      "small": "Small portion of chips.",
+      "medium": "Medium portion of chips.",
+      "large": "Large portion of chips."
+    };
+    if (!descriptionEl && knownDescriptions[lowerName]) {
+      const desc = document.createElement("p");
+      desc.className = "description";
+      desc.textContent = knownDescriptions[lowerName];
+      const itemTop = item.querySelector(".item-top");
+      if (itemTop) itemTop.insertAdjacentElement("afterend", desc);
+    }
 
     const visual = document.createElement("div");
     visual.className = "food-visual";
-    visual.setAttribute("aria-hidden", "true");
+    visual.setAttribute("aria-label", visualLabel + ". " + visualHint);
     const icon = document.createElement("span");
     icon.className = "food-visual-icon";
-    icon.textContent = foodIcon;
+    icon.textContent = foodIcons.join(" ");
+    icon.setAttribute("aria-hidden", "true");
     const label = document.createElement("span");
     label.className = "food-visual-label";
-    label.textContent = categoryName;
+    label.textContent = visualLabel;
     const hint = document.createElement("small");
-    hint.textContent = "Made for campus cravings";
+    hint.textContent = visualHint;
     label.appendChild(hint);
     visual.append(icon, label);
     const itemTop = item.querySelector(".item-top");
