@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmed — Campus Eats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--hunter:#1F3823;--brick:#A8412C;--parchment:#EFE9DA;--gold:#C9A227;--ink:#2B2418;--white:#fff;--muted:#6c665b}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:var(--parchment);color:var(--ink);font-family:'Work Sans',sans-serif;line-height:1.5}
+    a{color:inherit;text-decoration:none}
+    header{background:var(--hunter);color:var(--white);border-bottom:4px solid var(--gold);padding:17px 20px}
+    .nav{max-width:900px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{font:700 24px 'Oswald',sans-serif;letter-spacing:1px}
+    .nav a:last-child{font:500 14px 'Oswald',sans-serif;text-transform:uppercase;color:var(--gold)}
+    main{max-width:760px;margin:0 auto;padding:42px 16px 64px}
+    .hero{text-align:center;margin-bottom:28px}
+    .check{width:70px;height:70px;border-radius:50%;background:var(--hunter);color:var(--gold);display:grid;place-items:center;font-size:38px;margin:0 auto 18px;border:3px solid var(--gold)}
+    h1,h2,h3{font-family:'Oswald',sans-serif;line-height:1.12}
+    h1{font-size:clamp(32px,6vw,46px);margin-bottom:10px}
+    .hero p{color:var(--muted);max-width:520px;margin:0 auto}
+    .card{background:var(--white);border:1px solid #ded5c2;border-radius:12px;padding:22px;margin-bottom:16px;box-shadow:0 6px 20px rgba(43,36,24,.05)}
+    .eyebrow{font:600 12px 'Oswald',sans-serif;letter-spacing:1.3px;text-transform:uppercase;color:var(--brick);margin-bottom:7px}
+    .reference{font:600 clamp(19px,4vw,25px) 'Oswald',sans-serif;overflow-wrap:anywhere}
+    .status{display:inline-flex;align-items:center;gap:7px;background:#f5edcf;color:var(--hunter);padding:6px 10px;border-radius:99px;font-size:13px;font-weight:600;margin-top:12px}
+    .details{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+    .detail-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+    .detail-value{font-weight:600;overflow-wrap:anywhere}
+    .items{list-style:none;margin-top:12px}
+    .items li{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid #eee8dc}
+    .items li:last-child{border-bottom:0}
+    .item-name{font-weight:600}
+    .item-qty{font-size:13px;color:var(--muted);margin-top:2px}
+    .money-row{display:flex;justify-content:space-between;gap:16px;margin-top:10px}
+    .money-row.total{border-top:1px solid #ded5c2;padding-top:14px;margin-top:15px;font-weight:700;font-size:19px}
+    .note{background:#f8f4e9;border-left:4px solid var(--gold);padding:13px 15px;border-radius:5px;white-space:pre-wrap;overflow-wrap:anywhere}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:12px 18px;border-radius:7px;font:600 14px 'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.4px;text-align:center}
+    .primary{background:var(--brick);color:white}
+    .primary:hover{background:#8f371f}
+    .secondary{border:2px solid var(--hunter);color:var(--hunter)}
+    .hidden{display:none!important}
+    .help{font-size:13px;color:var(--muted);margin-top:15px}
+    @media(max-width:520px){main{padding-top:30px}.card{padding:18px}.details{grid-template-columns:1fr;gap:13px}.actions{flex-direction:column}.btn{width:100%}.brand{font-size:21px}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="/">CAMPUS EATS</a>
+      <a href="campuseats-menu.html">Back to menu</a>
+    </nav>
+  </header>
+  <main>
+    <section class="hero" id="confirmedHero">
+      <div class="check" aria-hidden="true">✓</div>
+      <h1>Order received!</h1>
+      <p>Your order has been placed successfully. Keep your order reference handy while we get it ready.</p>
+    </section>
+
+    <section class="card" id="orderCard">
+      <div class="eyebrow">Your order reference</div>
+      <div class="reference" id="orderReference">Loading…</div>
+      <div class="status"><span aria-hidden="true">●</span> Pending staff confirmation</div>
+      <div class="details">
+        <div><div class="detail-label">Delivery location</div><div class="detail-value" id="deliveryLocation">—</div></div>
+        <div><div class="detail-label">Payment method</div><div class="detail-value" id="paymentMethod">—</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Order summary</h2>
+      <ul class="items" id="itemList"></ul>
+      <div class="money-row"><span>Subtotal</span><span id="subtotal">—</span></div>
+      <div class="money-row"><span>Service fee</span><span id="serviceFee">—</span></div>
+      <div class="money-row total"><span>Total</span><span id="total">—</span></div>
+    </section>
+
+    <section class="card hidden" id="instructionsCard">
+      <h2>Instructions for the team</h2>
+      <p class="note" id="instructions"></p>
+    </section>
+
+    <section class="card hidden" id="fallbackCard">
+      <h2>Looking for your order?</h2>
+      <p>This page doesn't have the saved details for this order on this browser. You can still check your order in My Orders.</p>
+    </section>
+
+    <div class="actions" id="actions">
+      <a class="btn primary" id="trackButton" href="my-orders.html">Track this order</a>
+      <a class="btn secondary" href="my-orders.html">View all orders</a>
+    </div>
+    <p class="help">Campus Eats does not take customer card payments. Please follow the payment method shown above.</p>
+  </main>
+  <script>
+    (function(){
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get('orderId');
+      const trackButton = document.getElementById('trackButton');
+      const fallbackCard = document.getElementById('fallbackCard');
+      const orderCard = document.getElementById('orderCard');
+      const summaryCard = document.querySelector('#itemList').closest('.card');
+      const instructionsCard = document.getElementById('instructionsCard');
+      const hero = document.getElementById('confirmedHero');
+
+      function money(cents){
+        return new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR'}).format((Number(cents)||0)/100);
+      }
+      function safeText(value){
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function(char){
+          return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];
+        });
+      }
+
+      let order = null;
+      try {
+        order = JSON.parse(localStorage.getItem('campusEatsLastOrder') || 'null');
+      } catch (_) {
+        order = null;
+      }
+
+      if (!order || !order.id || !requestedId || order.id !== requestedId) {
+        hero.classList.add('hidden');
+        orderCard.classList.add('hidden');
+        summaryCard.classList.add('hidden');
+        instructionsCard.classList.add('hidden');
+        fallbackCard.classList.remove('hidden');
+        trackButton.textContent = 'Open My Orders';
+        trackButton.href = 'my-orders.html';
+        return;
+      }
+
+      document.getElementById('orderReference').textContent = String(order.id).toUpperCase();
+      document.getElementById('deliveryLocation').textContent =
+        [order.buildingName, order.room_number].filter(Boolean).join(' — ') || 'See My Orders for delivery details';
+      const paymentLabels = {cash:'Cash',bank_transfer:'Bank transfer'};
+      document.getElementById('paymentMethod').textContent = paymentLabels[order.payment_method] || order.payment_method || 'Not specified';
+
+      const items = Array.isArray(order.items) ? order.items : [];
+      document.getElementById('itemList').innerHTML = items.map(function(item){
+        return '<li><div><div class="item-name">' + safeText(item.itemName || item.name || 'Menu item') + '</div><div class="item-qty">Qty: ' + safeText(item.quantity || 1) + '</div></div><strong>' + money(item.lineTotalCents) + '</strong></li>';
+      }).join('') || '<li>Item details are available in My Orders.</li>';
+
+      document.getElementById('subtotal').textContent = money(order.subtotal_cents);
+      document.getElementById('serviceFee').textContent = money(order.fee_cents);
+      document.getElementById('total').textContent = money(order.total_cents);
+
+      if (order.order_notes) {
+        document.getElementById('instructions').textContent = order.order_notes;
+        instructionsCard.classList.remove('hidden');
+      }
+
+      trackButton.href = 'order%20tracking.html?orderId=' + encodeURIComponent(order.id);
+    })();
+  </script>
+</body>
+</html>
