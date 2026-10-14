@@ -36,6 +36,8 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
 .order-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px;padding-top:13px;border-top:1px solid #eee8dc}
 .total{font:700 19px 'Oswald',sans-serif;color:var(--brick)}
 .empty{background:white;border-radius:12px;padding:28px;text-align:center;line-height:1.6}
+#notificationToast{display:none;position:fixed;right:18px;bottom:18px;z-index:1000;max-width:min(420px,calc(100vw - 36px));padding:15px 18px;background:var(--hunter);color:white;border-left:4px solid var(--gold);border-radius:10px;box-shadow:0 8px 28px #0003;line-height:1.45}
+#notificationToast.show{display:block}
 @media(max-width:520px){h1{font-size:32px}.order{padding:15px}.links{gap:12px}}
 </style>
 </head>
@@ -43,8 +45,8 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
 <header><div class="nav"><a class="brand" href="campuseats-menu.html">CAMPUS EATS</a><nav class="links" aria-label="Main navigation"><a href="campuseats-menu.html">Menu</a><a href="my-orders.html">Track Order</a><a href="my-orders.html" aria-current="page">My Orders</a><a href="login.html" id="accountNav">Sign In</a><a href="#" id="logoutNav" hidden>Log Out</a></nav></div></header>
 <main>
 <section class="hero"><span class="eyebrow">Your Campus Eats account</span><h1>My Orders</h1><p class="subtitle">See your recent orders and check their latest status.</p></section>
-<div class="actions"><button class="primary" id="refreshBtn" type="button">Refresh Orders</button><a class="button secondary" href="campuseats-menu.html">Browse Menu</a></div>
-<div id="message" role="status" aria-live="polite">Loading your orders…</div>
+<div class="actions"><button class="primary" id="refreshBtn" type="button">Refresh Orders</button><button class="secondary" id="notificationBtn" type="button">Enable Notifications</button><a class="button secondary" href="campuseats-menu.html">Browse Menu</a></div>
+<div id="message" role="status" aria-live="polite">Loading your orders…</div><div id="notificationToast" role="status" aria-live="polite"></div>
 <section id="orders" aria-label="Your order history"></section>
 </main>
 <script>
@@ -55,6 +57,12 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
   const message = document.getElementById('message');
   const ordersEl = document.getElementById('orders');
   const refreshBtn = document.getElementById('refreshBtn');
+  const notificationBtn = document.getElementById('notificationBtn');
+  const notificationToast = document.getElementById('notificationToast');
+  const previousStatuses = new Map();
+  let firstSuccessfulLoad = true;
+  let loading = false;
+  let toastTimer = null;
   const labels = {pending:'Pending', accepted:'Order Confirmed', delivered:'Delivered', cancelled:'Cancelled'};
   function addText(parent, tag, className, value){
     const el = document.createElement(tag);
@@ -63,6 +71,42 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
     parent.appendChild(el);
     return el;
   }
+  function showToast(text){
+    notificationToast.textContent = text;
+    notificationToast.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>notificationToast.classList.remove('show'), 6500);
+  }
+  function statusMessage(status){
+    return ({pending:'is awaiting staff confirmation',accepted:'has been accepted by staff',delivered:'has been delivered',cancelled:'has been cancelled'})[status] || 'status changed to '+status;
+  }
+  function announceStatus(order, status){
+    const message = 'Order #'+String(order.id).slice(0,8).toUpperCase()+' '+statusMessage(status)+'.';
+    showToast(message);
+    if('Notification' in window && Notification.permission === 'granted'){
+      try { new Notification('Campus Eats order update', {body:message, tag:'campus-eats-'+order.id}); } catch (_) {}
+    }
+  }
+  notificationBtn.addEventListener('click', async function(){
+    if(!('Notification' in window)){
+      showToast('Browser notifications are not supported here. Keep My Orders open to see on-page updates.');
+      return;
+    }
+    if(Notification.permission === 'granted'){
+      showToast('Browser notifications are already enabled.');
+      return;
+    }
+    if(Notification.permission === 'denied'){
+      showToast('Notifications are blocked in your browser settings. You can still see updates while this page is open.');
+      return;
+    }
+    try{
+      const permission = await Notification.requestPermission();
+      showToast(permission === 'granted' ? 'Browser notifications enabled. We will notify you when an order status changes.' : 'Permission was not granted. On-page updates will still appear while this page is open.');
+    }catch(_){
+      showToast('Could not enable browser notifications. On-page updates will still appear while this page is open.');
+    }
+  });
   function renderOrders(orders){
     ordersEl.replaceChildren();
     if(!orders.length){
@@ -130,7 +174,8 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       button.textContent='Cancel Order';
     }
   }
-  async function loadOrders(){
+  async function loadOrders(isPoll){
+    if(loading) return;
     if(!token){
       message.textContent='Please sign in to view your order history.';
       ordersEl.replaceChildren();
@@ -144,8 +189,9 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       ordersEl.appendChild(link);
       return;
     }
+    loading=true;
     refreshBtn.disabled=true;
-    message.textContent='Loading your orders…';
+    if(!isPoll) message.textContent='Loading your orders…';
     try{
       const response=await fetch(API_BASE+'/api/orders',{headers:{Authorization:'Bearer '+token}});
       const data=await response.json().catch(()=>({}));
@@ -156,14 +202,25 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       }
       if(!response.ok) throw new Error(data.error||'Could not load your orders.');
       const orders=Array.isArray(data.orders)?data.orders:[];
+      if(!firstSuccessfulLoad){
+        orders.forEach(order=>{
+          const current=String(order.status||'pending').toLowerCase();
+          const previous=previousStatuses.get(order.id);
+          if(previous && previous!==current) announceStatus(order,current);
+        });
+      }
+      previousStatuses.clear();
+      orders.forEach(order=>previousStatuses.set(order.id,String(order.status||'pending').toLowerCase()));
+      firstSuccessfulLoad=false;
       renderOrders(orders);
-      message.textContent=orders.length ? 'Showing your '+orders.length+' most recent order'+(orders.length===1?'':'s')+'.' : 'Your order history is empty.';
+      message.textContent=orders.length ? 'Showing your '+orders.length+' most recent order'+(orders.length===1?'':'s')+'. Statuses refresh automatically every 15 seconds while this page is open.' : 'Your order history is empty.';
     }catch(error){
       message.textContent=error.message||'Could not connect to Campus Eats. Please try again.';
-    }finally{refreshBtn.disabled=false;}
+    }finally{refreshBtn.disabled=false;loading=false;}
   }
-  refreshBtn.addEventListener('click',loadOrders);
-  loadOrders();
+  refreshBtn.addEventListener('click',()=>loadOrders(false));
+  loadOrders(false);
+  setInterval(()=>loadOrders(true),15000);
 })();
 </script>
 
