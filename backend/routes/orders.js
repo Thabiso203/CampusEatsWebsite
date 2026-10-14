@@ -9,6 +9,49 @@ const router = express.Router();
 const SERVICE_FEE_PERCENT = Number(process.env.SERVICE_FEE_PERCENT || 10);
 
 // ------------------------------------------------------------
+// POST /api/orders/:id/feedback — one rating per delivered order.
+// Feedback is stored against the authenticated customer and order.
+// ------------------------------------------------------------
+router.post('/:id/feedback', verifyToken, requireCustomer, async (req, res) => {
+  const rating = Number(req.body.rating);
+  const comment = typeof req.body.comment === 'string' ? req.body.comment.trim() : '';
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: 'Rating must be a whole number from 1 to 5.' });
+  }
+  if (comment.length > 1000) {
+    return res.status(400).json({ error: 'Feedback must be 1000 characters or fewer.' });
+  }
+
+  try {
+    const orderResult = await pool.query(
+      'SELECT id FROM orders WHERE id = $1 AND customer_id = $2 AND status = $3',
+      [req.params.id, req.user.id, 'delivered']
+    );
+    if (orderResult.rowCount === 0) {
+      return res.status(409).json({ error: 'Feedback is available only for your delivered orders.' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO order_feedback (order_id, customer_id, rating, comment)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (order_id) DO NOTHING
+       RETURNING order_id, rating, comment, created_at`,
+      [req.params.id, req.user.id, rating, comment || null]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(409).json({ error: 'Feedback has already been submitted for this order.' });
+    }
+    return res.status(201).json({ feedback: result.rows[0], message: 'Thank you for your feedback!' });
+  } catch (err) {
+    console.error('submit order feedback error', err);
+    return res.status(500).json({ error: 'Failed to save feedback. Please try again.' });
+  }
+});
+
+
+// ------------------------------------------------------------
 // POST /api/orders
 // Body: { buildingId, roomNumber, paymentMethod, items: [{ menuItemId, quantity }] }
 //
@@ -215,8 +258,12 @@ router.get('/:id', verifyToken, requireCustomer, async (req, res) => {
 router.get('/', verifyToken, requireCustomer, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, status, total_cents, created_at FROM orders
-       WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 50`,
+      `SELECT o.id, o.status, o.total_cents, o.created_at,
+              (f.order_id IS NOT NULL) AS feedback_submitted
+       FROM orders o
+       LEFT JOIN order_feedback f ON f.order_id = o.id AND f.customer_id = o.customer_id
+       WHERE o.customer_id = $1
+       ORDER BY o.created_at DESC LIMIT 50`,
       [req.user.id]
     );
     res.json({ orders: result.rows });
