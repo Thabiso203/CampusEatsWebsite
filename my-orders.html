@@ -32,6 +32,7 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
 .order-id{font:700 18px 'Oswald',sans-serif;color:var(--hunter)}
 .status{display:inline-block;border-radius:20px;padding:5px 10px;background:#f0eadb;font-size:12px;font-weight:700;text-transform:capitalize}
 .status.delivered{background:#e0f3e5;color:#176534}.status.cancelled{background:#fbe4df;color:#8f271b}.status.accepted{background:#e3edf9;color:#1d4d7d}
+.status-explanation{margin-top:9px;color:#5f594e;font-size:13px;line-height:1.45}
 .meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#6c655a;font-size:13px;margin-top:12px}
 .order-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px;padding-top:13px;border-top:1px solid #eee8dc}
 .total{font:700 19px 'Oswald',sans-serif;color:var(--brick)}
@@ -206,6 +207,13 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       addText(top,'span','order-id','#'+String(order.id).slice(0,8).toUpperCase());
       const status=addText(top,'span','status '+String(order.status||'pending').toLowerCase(),labels[order.status]||order.status||'Unknown');
       card.appendChild(top);
+      const statusExplanations = {
+        pending: 'Waiting for staff to confirm your order.',
+        accepted: 'Staff have accepted your order. It is being prepared or arranged.',
+        delivered: 'This order has been marked as delivered.',
+        cancelled: 'This order was cancelled and will not be prepared or delivered.'
+      };
+      addText(card, 'p', 'status-explanation', statusExplanations[String(order.status || 'pending').toLowerCase()] || 'Check tracking for the latest update on this order.');
       const meta=document.createElement('div');meta.className='meta';
       const date=order.created_at ? new Date(order.created_at).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}) : 'Date unavailable';
       addText(meta,'span','',date);
