@@ -16,7 +16,7 @@ router.get('/orders', verifyToken, requireStaff(), async (req, res) => {
       params.push(statusFilter);
       where = 'WHERE o.status = $1';
     } else {
-      where = "WHERE o.status IN ('pending', 'accepted')";
+     where = "WHERE o.status IN ('pending', 'accepted', 'delivered', 'cancelled')";
     }
 
     const result = await pool.query(
