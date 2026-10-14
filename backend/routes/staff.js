@@ -20,7 +20,7 @@ router.get('/orders', verifyToken, requireStaff(), async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT o.id, o.status, o.total_cents, o.payment_method, o.room_number,
+      `SELECT o.id, o.status, o.total_cents, o.payment_method, o.room_number, o.order_notes,
               o.created_at, o.accepted_at, b.name AS building_name,
               c.full_name AS customer_name, c.phone AS customer_phone,
               COALESCE(
