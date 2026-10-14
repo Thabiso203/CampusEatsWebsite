@@ -564,12 +564,12 @@
                     <div class="meta-value" id="orderId">#CE-20419</div>
                 </div>
                 <div class="meta-block">
-                    <div class="meta-label">Shop</div>
-                    <div class="meta-value">TUBATSI Grill House</div>
+                    <div class="meta-label">Delivery Location</div>
+                    <div class="meta-value">Loading…</div>
                 </div>
                 <div class="meta-block">
-                    <div class="meta-label">Deliver To</div>
-                    <div class="meta-value">David Webster Hall</div>
+                    <div class="meta-label">Room / Location</div>
+                    <div class="meta-value">Loading…</div>
                 </div>
             </div>
             <span class="status-pill" id="statusPill" aria-live="polite">Pending</span>
@@ -583,40 +583,16 @@
                 <li class="step" data-state="pending">
                     <span class="step-dot" aria-hidden="true"></span>
                     <div class="step-body">
-                        <div class="step-title">Pending</div>
-                        <div class="step-desc">Waiting for Campus Eats staff to review your order.</div>
+                        <div class="step-title">Order Placed</div>
+                        <div class="step-desc">We have received your order. Campus Eats staff still needs to accept it.</div>
                         <div class="step-time" data-time></div>
                     </div>
                 </li>
-                <li class="step" data-state="confirmed">
+                <li class="step" data-state="accepted">
                     <span class="step-dot" aria-hidden="true"></span>
                     <div class="step-body">
-                        <div class="step-title">Order Confirmed</div>
-                        <div class="step-desc">Staff confirmed your order and payment details.</div>
-                        <div class="step-time" data-time></div>
-                    </div>
-                </li>
-                <li class="step" data-state="placed">
-                    <span class="step-dot" aria-hidden="true"></span>
-                    <div class="step-body">
-                        <div class="step-title">Order Placed at TUBATSI</div>
-                        <div class="step-desc">Your order has been sent to Tubatsi Grill House.</div>
-                        <div class="step-time" data-time></div>
-                    </div>
-                </li>
-                <li class="step" data-state="ready">
-                    <span class="step-dot" aria-hidden="true"></span>
-                    <div class="step-body">
-                        <div class="step-title">Food Ready</div>
-                        <div class="step-desc">The kitchen has finished preparing your food.</div>
-                        <div class="step-time" data-time></div>
-                    </div>
-                </li>
-                <li class="step" data-state="delivery">
-                    <span class="step-dot" aria-hidden="true"></span>
-                    <div class="step-body">
-                        <div class="step-title">Out for Delivery</div>
-                        <div class="step-desc">A runner is on the way to your building.</div>
+                        <div class="step-title">Accepted by Staff</div>
+                        <div class="step-desc">Your order has been accepted and is being handled by the team.</div>
                         <div class="step-time" data-time></div>
                     </div>
                 </li>
@@ -624,19 +600,12 @@
                     <span class="step-dot" aria-hidden="true"></span>
                     <div class="step-body">
                         <div class="step-title">Delivered</div>
-                        <div class="step-desc">Enjoy your meal! Thuma Mina — sent and delivered.</div>
+                        <div class="step-desc">Your order has been marked as delivered. Enjoy your meal!</div>
                         <div class="step-time" data-time></div>
                     </div>
                 </li>
             </ol>
         </section>
-
-        <!-- ============ DEMO CONTROLS ============ -->
-        <div class="demo-controls">
-            <button class="demo-btn primary" id="restartBtn" type="button">Restart Demo</button>
-            <button class="demo-btn danger" id="cancelBtn" type="button">Simulate Cancellation</button>
-        </div>
-        <p class="demo-note">Demo mode: the order advances automatically every few seconds.</p>
 
         <a class="back-link" href="campuseats-menu.html">← Back to Menu</a>\n        <div id="notificationToast" role="status" aria-live="polite"></div>
 
@@ -702,7 +671,7 @@
     if (metaBlocks[1]) metaBlocks[1].querySelector('.meta-value').textContent = order.building_name || order.buildingName || 'Delivery location';
     if (metaBlocks[2]) {
       const room = order.room_number || '';
-      metaBlocks[2].querySelector('.meta-value').textContent = room || (order.building_name || 'Delivery location');
+      metaBlocks[2].querySelector('.meta-value').textContent = room || 'Not specified';
     }
 
     const status = String(order.status || 'pending').toLowerCase();
@@ -717,7 +686,7 @@
 
     const steps = Array.from(timeline.querySelectorAll('.step'));
     const pending = steps.find(s => s.dataset.state === 'pending');
-    const accepted = steps.find(s => s.dataset.state === 'confirmed');
+    const accepted = steps.find(s => s.dataset.state === 'accepted');
     const delivered = steps.find(s => s.dataset.state === 'delivered');
     steps.forEach(s => { s.style.display = 'none'; s.classList.remove('done', 'current'); });
     if (pending) pending.style.display = '';
@@ -732,7 +701,14 @@
       const timeEl = step.querySelector('[data-time]');
       if (index < activeIndex) step.classList.add('done');
       else if (index === activeIndex) step.classList.add(status === 'delivered' ? 'done' : 'current');
-      if (timeEl && !timeEl.textContent && index <= activeIndex) timeEl.textContent = new Date(order.updated_at || order.created_at || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const timestamp = step.dataset.state === 'pending' ? order.created_at
+        : step.dataset.state === 'accepted' ? order.accepted_at
+        : step.dataset.state === 'delivered' ? order.delivered_at : null;
+      if (timeEl) {
+        timeEl.textContent = index <= activeIndex && timestamp
+          ? new Date(timestamp).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})
+          : '';
+      }
     });
 
     let summary = document.getElementById('liveOrderDetails');
@@ -740,7 +716,7 @@
       summary = document.createElement('section');
       summary.id = 'liveOrderDetails';
       summary.className = 'timeline-card';
-      summary.innerHTML = '<h2>Order Details</h2><div id="liveItems"></div><p id="liveTotal"></p><p id="livePayment"></p><p id="liveRefresh" aria-live="polite"></p>';
+      summary.innerHTML = '<h2>Order Details</h2><div id="liveItems"></div><p id="liveTotal"></p><p id="livePayment"></p><p id="liveNotes"></p><p id="liveRefresh" aria-live="polite"></p>';
       timeline.parentElement.insertAdjacentElement('afterend', summary);
     }
     const items = Array.isArray(order.items) ? order.items : [];
@@ -751,7 +727,9 @@
       document.getElementById('liveItems').appendChild(row);
     });
     document.getElementById('liveTotal').textContent = 'Total: R' + (Number(order.total_cents || 0) / 100).toFixed(2);
-    document.getElementById('livePayment').textContent = 'Payment: ' + (order.payment_method === 'bank_transfer' ? 'Bank transfer on delivery' : 'Cash on delivery');
+    document.getElementById('livePayment').textContent = 'Payment: ' + (order.payment_method === 'bank_transfer' ? 'Bank transfer' : 'Cash');
+    const notes = document.getElementById('liveNotes');
+    if (notes) notes.textContent = order.order_notes ? 'Instructions: ' + order.order_notes : '';
     document.getElementById('liveRefresh').textContent = status === 'delivered' || status === 'cancelled' ? 'This order is ' + status + '.' : 'Status refreshes automatically.';
   }
 
