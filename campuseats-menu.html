@@ -520,7 +520,7 @@
       <a class="nav-label active" href="campuseats-menu.html" aria-current="page">Menu</a>
       <a class="nav-label" href="my-orders.html">Track Order</a>
       <a class="nav-label" href="my-orders.html">My Orders</a>
-      <a class="nav-label btn-signin" href="login.html">Sign In</a>
+      <a class="nav-label btn-signin" href="login.html" id="accountNav">Sign In</a><a class="nav-label" href="#" id="logoutNav" hidden>Log Out</a>
     </nav>
   </div>
 </header>
@@ -1005,6 +1005,31 @@
     } catch (error) {
       alert("Your cart could not be saved. Please check your browser settings and try again.");
     }
+  });
+})();
+</script>
+
+
+<script>
+(function () {
+  const accountLink = document.getElementById('accountNav');
+  const logoutLink = document.getElementById('logoutNav');
+  if (!accountLink || !logoutLink) return;
+  const token = localStorage.getItem('campusEatsToken');
+  const rawUser = localStorage.getItem('campusEatsCurrentUser');
+  if (token && rawUser) {
+    let user = {};
+    try { user = JSON.parse(rawUser) || {}; } catch (_) {}
+    const name = [user.first_name, user.firstName, user.name, user.full_name].find(value => typeof value === 'string' && value.trim());
+    accountLink.textContent = name ? name.trim().split(/\\s+/)[0] : 'My Account';
+    accountLink.href = 'my-orders.html';
+    logoutLink.hidden = false;
+  }
+  logoutLink.addEventListener('click', function (event) {
+    event.preventDefault();
+    localStorage.removeItem('campusEatsToken');
+    localStorage.removeItem('campusEatsCurrentUser');
+    window.location.href = 'campuseats-menu.html';
   });
 })();
 </script>
