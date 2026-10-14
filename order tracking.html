@@ -244,6 +244,10 @@
             cursor: pointer;
         }
         .cancel-order-btn:disabled { opacity: 0.6; cursor: wait; }
+        .notification-controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        .notification-btn { border:1px solid #d8d0c0; border-radius:8px; padding:9px 12px; background:var(--white); color:var(--ink); font:600 0.78rem 'Work Sans',sans-serif; cursor:pointer; }
+        #notificationToast { display:none; position:fixed; right:18px; bottom:18px; z-index:1000; max-width:min(420px,calc(100vw - 36px)); padding:15px 18px; background:var(--hunter); color:var(--white); border-left:4px solid var(--gold); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.2); line-height:1.45; }
+        #notificationToast.show { display:block; }
 
         /* ===== TIMELINE ===== */
         .timeline-card {
@@ -568,7 +572,7 @@
                 </div>
             </div>
             <span class="status-pill" id="statusPill" aria-live="polite">Pending</span>
-            <button class="cancel-order-btn" id="cancelOrderBtn" type="button" hidden>Cancel Order</button>
+            <div class="notification-controls"><button class="notification-btn" id="notificationBtn" type="button">Enable Notifications</button><button class="cancel-order-btn" id="cancelOrderBtn" type="button" hidden>Cancel Order</button></div>
         </section>
 
         <!-- ============ TIMELINE ============ -->
@@ -633,7 +637,7 @@
         </div>
         <p class="demo-note">Demo mode: the order advances automatically every few seconds.</p>
 
-        <a class="back-link" href="campuseats-menu.html">← Back to Menu</a>
+        <a class="back-link" href="campuseats-menu.html">← Back to Menu</a>\n        <div id="notificationToast" role="status" aria-live="polite"></div>
 
     </main>
 
@@ -647,6 +651,10 @@
   const orderIdEl = document.getElementById('orderId');
   const banner = document.getElementById('cancelledBanner');
   const cancelOrderBtn = document.getElementById('cancelOrderBtn');
+  const notificationBtn = document.getElementById('notificationBtn');
+  const notificationToast = document.getElementById('notificationToast');
+  let previousStatus = null;
+  let toastTimer = null;
   const timeline = document.getElementById('timeline');
   const demoControls = document.querySelector('.demo-controls');
   const demoNote = document.querySelector('.demo-note');
@@ -656,6 +664,32 @@
 
   if (demoControls) demoControls.style.display = 'none';
   if (demoNote) demoNote.style.display = 'none';
+
+  function showToast(message){
+    notificationToast.textContent = message;
+    notificationToast.classList.add('show');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>notificationToast.classList.remove('show'),6500);
+  }
+  function statusMessage(status){
+    return ({pending:'is awaiting staff confirmation',accepted:'has been accepted by staff',delivered:'has been delivered',cancelled:'has been cancelled'})[status] || 'status changed to '+status;
+  }
+  function announceStatus(order,status){
+    const message='Order #'+String(order.id).slice(0,8).toUpperCase()+' '+statusMessage(status)+'.';
+    showToast(message);
+    if('Notification' in window && Notification.permission==='granted'){
+      try { new Notification('Campus Eats order update',{body:message,tag:'campus-eats-'+order.id}); } catch (_) {}
+    }
+  }
+  notificationBtn.addEventListener('click',async function(){
+    if(!('Notification' in window)){showToast('Browser notifications are not supported here. On-page updates will still appear while this page is open.');return;}
+    if(Notification.permission==='granted'){showToast('Browser notifications are already enabled.');return;}
+    if(Notification.permission==='denied'){showToast('Notifications are blocked in browser settings. On-page updates will still appear while this page is open.');return;}
+    try{
+      const permission=await Notification.requestPermission();
+      showToast(permission==='granted'?'Browser notifications enabled. We will notify you when this order changes.':'Permission was not granted. On-page updates will still appear while this page is open.');
+    }catch(_){showToast('Could not enable browser notifications. On-page updates will still appear while this page is open.');}
+  });
 
   function showMessage(message) {
     pill.textContent = message;
@@ -671,6 +705,8 @@
     }
 
     const status = String(order.status || 'pending').toLowerCase();
+    if(previousStatus !== null && previousStatus !== status) announceStatus(order,status);
+    previousStatus = status;
     pill.textContent = statusLabels[status] || status;
     pill.classList.toggle('cancelled', status === 'cancelled');
     pill.classList.toggle('delivered', status === 'delivered');
