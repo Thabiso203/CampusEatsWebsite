@@ -146,6 +146,42 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
 });
 
 // ------------------------------------------------------------
+// POST /api/orders/:id/cancel — customers may cancel only their own pending orders.
+// The conditional UPDATE is atomic, so it cannot cancel an order staff accepted first.
+// ------------------------------------------------------------
+router.post('/:id/cancel', verifyToken, requireCustomer, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE orders
+       SET status = 'cancelled'
+       WHERE id = $1 AND customer_id = $2 AND status = 'pending'
+       RETURNING id, status`,
+      [req.params.id, req.user.id]
+    );
+
+    if (result.rowCount === 1) {
+      return res.json({ order: result.rows[0], message: 'Order cancelled' });
+    }
+
+    const existing = await pool.query(
+      'SELECT status FROM orders WHERE id = $1 AND customer_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (existing.rowCount === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    return res.status(409).json({
+      error: existing.rows[0].status === 'pending'
+        ? 'This order could not be cancelled. Please refresh and try again.'
+        : 'Only pending orders can be cancelled.'
+    });
+  } catch (err) {
+    console.error('cancel order error', err);
+    return res.status(500).json({ error: 'Failed to cancel order' });
+  }
+});
+
+// ------------------------------------------------------------
 // GET /api/orders/:id — customer checks their own order status
 // ------------------------------------------------------------
 router.get('/:id', verifyToken, requireCustomer, async (req, res) => {
