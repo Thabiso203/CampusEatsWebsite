@@ -25,6 +25,7 @@
     .card{background:var(--white);border:1px solid #ded5c2;border-radius:12px;padding:22px;margin-bottom:16px;box-shadow:0 6px 20px rgba(43,36,24,.05)}
     .eyebrow{font:600 12px 'Oswald',sans-serif;letter-spacing:1.3px;text-transform:uppercase;color:var(--brick);margin-bottom:7px}
     .reference{font:600 clamp(19px,4vw,25px) 'Oswald',sans-serif;overflow-wrap:anywhere}
+    .reference-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}.copy-reference{border:1px solid var(--line);background:#fff;color:var(--hunter);padding:9px 12px;border-radius:8px;font-weight:700;cursor:pointer}.copy-reference:focus-visible{outline:3px solid var(--gold);outline-offset:3px}.copy-status{font-size:13px;color:var(--hunter);min-height:1.2em}
     .status{display:inline-flex;align-items:center;gap:7px;background:#f5edcf;color:var(--hunter);padding:6px 10px;border-radius:99px;font-size:13px;font-weight:600;margin-top:12px}
     .details{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
     .detail-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
@@ -64,6 +65,7 @@
     <section class="card" id="orderCard">
       <div class="eyebrow">Your order reference</div>
       <div class="reference" id="orderReference">Loading…</div>
+      <div class="reference-actions"><button class="copy-reference" id="copyReference" type="button">Copy order reference</button><span class="copy-status" id="copyStatus" role="status" aria-live="polite"></span></div>
       <div class="status"><span aria-hidden="true">●</span> Pending staff confirmation</div>
       <div class="details">
         <div><div class="detail-label">Delivery location</div><div class="detail-value" id="deliveryLocation">—</div></div>
@@ -100,6 +102,8 @@
       const params = new URLSearchParams(window.location.search);
       const requestedId = params.get('orderId');
       const trackButton = document.getElementById('trackButton');
+      const copyReferenceButton = document.getElementById('copyReference');
+      const copyStatus = document.getElementById('copyStatus');
       const fallbackCard = document.getElementById('fallbackCard');
       const orderCard = document.getElementById('orderCard');
       const summaryCard = document.querySelector('#itemList').closest('.card');
@@ -130,6 +134,7 @@
         fallbackCard.classList.remove('hidden');
         trackButton.textContent = 'Open My Orders';
         trackButton.href = 'my-orders.html';
+        copyReferenceButton.hidden = true;
         return;
       }
 
@@ -154,6 +159,14 @@
       }
 
       trackButton.href = 'order%20tracking.html?orderId=' + encodeURIComponent(order.id);
+      copyReferenceButton.addEventListener('click', async function(){
+        try {
+          await navigator.clipboard.writeText(String(order.id).toUpperCase());
+          copyStatus.textContent = 'Order reference copied.';
+        } catch (_) {
+          copyStatus.textContent = 'Copy unavailable. Select the reference above to copy it manually.';
+        }
+      });
     })();
   </script>
 </body>
