@@ -1,37 +1,49 @@
-// src/routes/staff.js
+
 const express = require('express');
 const { pool } = require('../config/db');
 const { verifyToken, requireStaff } = require('../middleware/auth');
 
 const router = express.Router();
 
-// ------------------------------------------------------------
-// GET /api/staff/orders — dashboard feed of orders staff can act on
-// ------------------------------------------------------------
+// GET /api/staff/orders
 router.get('/orders', verifyToken, requireStaff(), async (req, res) => {
   try {
-    const statusFilter = req.query.status; // optional: pending | accepted | delivered | cancelled
+    const statusFilter = req.query.status;
     const params = [];
     let where = '';
+
     if (statusFilter) {
       params.push(statusFilter);
       where = 'WHERE o.status = $1';
     } else {
-      // Default view: anything still "live" — not yet delivered or cancelled.
       where = "WHERE o.status IN ('pending', 'accepted')";
     }
 
     const result = await pool.query(
       `SELECT o.id, o.status, o.total_cents, o.payment_method, o.room_number,
               o.created_at, o.accepted_at, b.name AS building_name,
-              c.full_name AS customer_name, c.phone AS customer_phone
+              c.full_name AS customer_name, c.phone AS customer_phone,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'item_name', oi.item_name,
+                    'quantity', oi.quantity,
+                    'unit_price_cents', oi.unit_price_cents,
+                    'line_total_cents', oi.line_total_cents
+                  )
+                ) FILTER (WHERE oi.order_id IS NOT NULL),
+                '[]'::json
+              ) AS items
        FROM orders o
        JOIN buildings b ON b.id = o.building_id
        JOIN customers c ON c.id = o.customer_id
+       LEFT JOIN order_items oi ON oi.order_id = o.id
        ${where}
+       GROUP BY o.id, b.name, c.full_name, c.phone
        ORDER BY o.created_at ASC`,
       params
     );
+
     res.json({ orders: result.rows });
   } catch (err) {
     console.error('staff list orders error', err);
@@ -39,6 +51,7 @@ router.get('/orders', verifyToken, requireStaff(), async (req, res) => {
   }
 });
 
+// Keep the existing POST routes below this point.
 // ------------------------------------------------------------
 // POST /api/staff/orders/:id/accept
 //

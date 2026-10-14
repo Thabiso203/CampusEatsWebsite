@@ -225,52 +225,90 @@
       <h1>Sign in to run the floor</h1>
       <p class="sub">Enter the shift passcode to open the order dashboard.</p>
 
-      <form id="login-form" novalidate>
-        <label for="passcode">Passcode</label>
-        <input
-          id="passcode"
-          class="passcode-input"
-          type="password"
-          inputmode="text"
-          autocomplete="off"
-          placeholder="••••••••••••"
-          autofocus
-        >
-        <div class="error-msg" id="error-msg">Wrong passcode. Ask your shift lead if you're not sure.</div>
-        <button class="btn-submit" type="submit">Enter Dashboard</button>
-      </form>
+     ```html
+<form id="login-form" novalidate>
+  <label for="staff-email">Email</label>
+  <input
+    id="staff-email"
+    class="passcode-input"
+    type="email"
+    autocomplete="username"
+    placeholder="you@example.com"
+    required
+  >
+
+  <label for="passcode" style="margin-top: 18px;">Password</label>
+  <input
+    id="passcode"
+    class="passcode-input"
+    type="password"
+    autocomplete="current-password"
+    placeholder="Enter your password"
+    required
+  >
+
+  <div class="error-msg" id="error-msg" role="alert"></div>
+  <button class="btn-submit" type="submit">Sign In</button>
+</form>
+```
     </div>
 
     <p class="footnote">Tubatsi Grill House · Wits Campus</p>
   </div>
 
 <script>
-  // Mock passcode validation. In production this would call an authenticated
-  // endpoint rather than checking a client-side string.
-  const VALID_PASSCODE = "comrades_2026";
+  const API_BASE = 'https://campus-eats-test-api.onrender.com';
 
   const form = document.getElementById('login-form');
-  const input = document.getElementById('passcode');
+  const emailInput = document.getElementById('staff-email');
+  const passwordInput = document.getElementById('passcode');
   const errorMsg = document.getElementById('error-msg');
+  const submitButton = form.querySelector('button[type="submit"]');
 
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
-    const entered = input.value.trim();
-
-    if (entered === VALID_PASSCODE) {
-      sessionStorage.setItem('campuseats_staff_authed', 'true');
-      window.location.href = 'staff-dashboard.html';
-    } else {
-      errorMsg.classList.add('visible');
-      input.classList.add('shake');
-      input.value = '';
-      input.focus();
-      setTimeout(() => input.classList.remove('shake'), 400);
-    }
-  });
-
-  input.addEventListener('input', function () {
     errorMsg.classList.remove('visible');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Signing in...';
+
+    try {
+      const response = await fetch(API_BASE + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailInput.value.trim(),
+          password: passwordInput.value,
+          as: 'staff'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.token || !data.staff) {
+        throw new Error(data.error || 'Sign-in failed.');
+      }
+
+      sessionStorage.setItem('campuseats_staff_token', data.token);
+      sessionStorage.setItem(
+        'campuseats_staff_user',
+        JSON.stringify({
+          id: data.staff.id,
+          full_name: data.staff.full_name,
+          role: data.staff.role
+        })
+      );
+
+      window.location.href = 'staff-dashboard.html';
+    } catch (error) {
+      errorMsg.textContent =
+        error.message === 'Failed to fetch'
+          ? 'Cannot reach the test API. Please try again.'
+          : error.message;
+      errorMsg.classList.add('visible');
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = 'Sign In';
+    }
   });
 </script>
 

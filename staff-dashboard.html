@@ -512,153 +512,94 @@
   const WARN_THRESHOLD_SECONDS = 60;       // last 60s pulses red
 
   const COLUMNS = [
-    { key: 'new',        label: 'New Orders',  cls: 'col-new' },
-    { key: 'accepted',   label: 'Accepted',     cls: 'col-accepted' },
-    { key: 'processing', label: 'Processing',   cls: 'col-processing' },
-    { key: 'ready',      label: 'Ready',        cls: 'col-ready' },
-    { key: 'delivering', label: 'Delivering',   cls: 'col-delivering' },
-    { key: 'completed',  label: 'Completed',    cls: 'col-completed' },
-    { key: 'cancelled',  label: 'Cancelled',    cls: 'col-cancelled' },
-  ];
+  { key: 'pending',   label: 'New Orders', cls: 'col-new' },
+  { key: 'accepted',  label: 'Accepted',   cls: 'col-accepted' },
+  { key: 'delivered', label: 'Delivered',  cls: 'col-completed' },
+  { key: 'cancelled', label: 'Cancelled',  cls: 'col-cancelled' },
+];
 
   /* =====================================================
      MOCK DATA
      ===================================================== */
-  const now = Date.now();
 
-  function minutesAgo(m) { return now - m * 60 * 1000; }
-  function secondsAgo(s) { return now - s * 1000; }
+const API_BASE = 'https://campus-eats-test-api.onrender.com';
+const staffToken = sessionStorage.getItem('campuseats_staff_token');
 
-  let orders = [
-    {
-      id: 'CE-1042',
-      customerName: 'Lindiwe M.',
-      phone: '071 234 5678',
-      items: [{ name: 'Big Boss Burger', qty: 1 }, { name: 'Mega Kota', qty: 2 }],
-      total: 190,
-      paymentMethod: 'cash',
-      building: "Men's Res — David Webster",
-      note: 'No onions please, ring the buzzer twice.',
-      photoLink: '#',
-      state: 'new',
-      createdAt: secondsAgo(20),
-    },
-    {
-      id: 'CE-1043',
-      customerName: 'Sipho K.',
-      phone: '082 555 1190',
-      items: [{ name: 'Braai Box', qty: 1 }],
-      total: 85,
-      paymentMethod: 'transfer',
-      building: 'Jubilee Hall',
-      note: '',
-      photoLink: '#',
-      state: 'new',
-      createdAt: secondsAgo(255),
-    },
-    {
-      id: 'CE-1039',
-      customerName: 'Amahle N.',
-      phone: '083 019 4477',
-      items: [{ name: 'Sunshine Breakfast', qty: 2 }, { name: 'Mega Kota', qty: 1 }],
-      total: 140,
-      paymentMethod: 'cash',
-      building: 'Barnato Hall',
-      note: 'Leave with res porter if I don\'t answer.',
-      photoLink: '#',
-      state: 'accepted',
-      createdAt: minutesAgo(6),
-    },
-    {
-      id: 'CE-1037',
-      customerName: 'Thabo R.',
-      phone: '076 882 3345',
-      items: [{ name: 'Big Boss Burger', qty: 2 }],
-      total: 180,
-      paymentMethod: 'transfer',
-      building: 'Reith Hall',
-      note: '',
-      photoLink: '#',
-      state: 'processing',
-      createdAt: minutesAgo(11),
-    },
-    {
-      id: 'CE-1035',
-      customerName: 'Nomvula P.',
-      phone: '079 231 7761',
-      items: [{ name: 'Mega Kota', qty: 3 }],
-      total: 150,
-      paymentMethod: 'cash',
-      building: 'Ernest Oppenheimer Hall',
-      note: 'Extra chips on the side if possible.',
-      photoLink: '#',
-      state: 'ready',
-      createdAt: minutesAgo(16),
-    },
-    {
-      id: 'CE-1031',
-      customerName: 'Katlego S.',
-      phone: '071 004 9982',
-      items: [{ name: 'Braai Box', qty: 1 }, { name: 'Sunshine Breakfast', qty: 1 }],
-      total: 130,
-      paymentMethod: 'transfer',
-      building: 'College House',
-      note: '',
-      photoLink: '#',
-      state: 'delivering',
-      createdAt: minutesAgo(24),
-    },
-    {
-      id: 'CE-1022',
-      customerName: 'Refilwe D.',
-      phone: '084 667 2201',
-      items: [{ name: 'Big Boss Burger', qty: 1 }, { name: 'Mega Kota', qty: 1 }],
-      total: 140,
-      paymentMethod: 'cash',
-      building: "Men's Res — David Webster",
-      note: '',
-      photoLink: '#',
-      state: 'completed',
-      createdAt: minutesAgo(52),
-    },
-    {
-      id: 'CE-1018',
-      customerName: 'Bongani T.',
-      phone: '078 340 5567',
-      items: [{ name: 'Sunshine Breakfast', qty: 1 }],
-      total: 45,
-      paymentMethod: 'cash',
-      building: 'Jubilee Hall',
-      note: '',
-      photoLink: '#',
-      state: 'cancelled',
-      cancelReason: 'Missed the 5-minute accept window',
-      createdAt: minutesAgo(70),
-    },
-  ];
+let orders = [];
+let soundOn = true;
 
-  let nextOrderNumber = 1044;
-  let soundOn = true;
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${staffToken}`,
+      ...(options.headers || {})
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Request failed.');
+  }
+
+  return data;
+}
+
+function formatOrderId(id) {
+  return `#${String(id).replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+}
+
+async function loadOrders() {
+  if (!staffToken) {
+    window.location.href = 'staff-login.html';
+    return;
+  }
+
+  try {
+    const data = await apiRequest('/api/staff/orders');
+
+    orders = data.orders.map(order => ({
+      id: order.id,
+      displayId: formatOrderId(order.id),
+      customerName: order.customer_name || 'Customer',
+      phone: order.customer_phone || '',
+      items: (order.items || []).map(item => ({
+        name: item.item_name,
+        qty: item.quantity
+      })),
+      total: Number(order.total_cents) / 100,
+      paymentMethod: order.payment_method,
+      building: order.building_name || '',
+      note: '',
+      state: order.status,
+      createdAt: new Date(order.created_at).getTime()
+    }));
+
+    render();
+  } catch (error) {
+    console.error('Could not load real orders:', error);
+    alert(`Could not load orders: ${error.message}`);
+  }
+}
 
   /* =====================================================
      STATE MACHINE
      ===================================================== */
-  const TRANSITIONS = {
-    new:        { accept: 'accepted', cancel: 'cancelled' },
-    accepted:   { place: 'processing', cancel: 'cancelled' },
-    processing: { ready: 'ready' },
-    ready:      { deliver: 'delivering' },
-    delivering: { deliver_done: 'completed' },
-  };
+ 
+const TRANSITIONS = {
+  pending:   { accept: 'accepted' },
+  accepted:  { deliver_done: 'delivered' }
+};
 
-  const ACTION_LABELS = {
-    accept: 'Accept Order',
-    cancel: 'Cancel Order',
-    place: 'Mark Placed',
-    ready: 'Mark Ready',
-    deliver: 'Start Delivery',
-    deliver_done: 'Mark Delivered',
-  };
+
+ 
+const ACTION_LABELS = {
+  accept: 'Accept Order',
+  deliver_done: 'Mark Delivered'
+};
+
 
   function actionsFor(state) {
     const map = TRANSITIONS[state];
@@ -670,33 +611,35 @@
     }));
   }
 
-  function applyAction(orderId, action) {
-    const order = orders.find((o) => o.id === orderId);
-    if (!order) return;
-    const map = TRANSITIONS[order.state];
-    if (!map || !map[action]) return;
-    order.state = map[action];
-    if (action === 'cancel') {
-      order.cancelReason = 'Cancelled by staff';
-    }
-    render();
+  
+ 
+async function applyAction(orderId, action) {
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+
+  const map = TRANSITIONS[order.state];
+  if (!map || !map[action]) return;
+
+  let endpoint;
+
+  if (action === 'accept' && order.state === 'pending') {
+    endpoint = `/api/staff/orders/${order.id}/accept`;
+  } else if (action === 'deliver_done' && order.state === 'accepted') {
+    endpoint = `/api/staff/orders/${order.id}/deliver`;
+  } else {
+    return;
   }
 
-  function autoCancelExpired() {
-    const nowTs = Date.now();
-    let changed = false;
-    orders.forEach((order) => {
-      if (order.state === 'new') {
-        const elapsed = (nowTs - order.createdAt) / 1000;
-        if (elapsed >= NEW_ORDER_WINDOW_SECONDS) {
-          order.state = 'cancelled';
-          order.cancelReason = 'Missed the 5-minute accept window';
-          changed = true;
-        }
-      }
-    });
-    if (changed) render();
+  try {
+    await apiRequest(endpoint, { method: 'POST' });
+    await loadOrders();
+  } catch (error) {
+    console.error('Order action failed:', error);
+    alert(`Could not update order: ${error.message}`);
   }
+}
+
+  
 
   /* =====================================================
      RENDER HELPERS
@@ -730,7 +673,7 @@
   }
 
   function cardHtml(order) {
-    const isNew = order.state === 'new';
+    const isNew = order.state === 'pending';
     let timerHtml = '';
     let urgentClass = '';
 
@@ -755,7 +698,7 @@
       : '';
 
     let footerHtml = '';
-    if (order.state === 'completed') {
+    if (order.state === 'delivered') {
       footerHtml = '<div class="status-note">Delivered — order closed.</div>';
     } else if (order.state === 'cancelled') {
       footerHtml = `<div class="cancel-reason">${order.cancelReason || 'Cancelled'}</div>`;
@@ -765,7 +708,7 @@
       <article class="card${urgentClass}" id="card-${order.id}">
         ${timerHtml}
         <div class="card-top">
-          <span class="order-id">${order.id}</span>
+          <span class="order-id">${order.displayId || order.id}</span>
           <span class="order-total">${formatMoney(order.total)}</span>
         </div>
         <div class="customer-line">${order.customerName}</div>
@@ -776,7 +719,7 @@
           <div class="meta-row"><span class="meta-label">Building</span><span class="meta-value">${order.building}</span></div>
         </div>
         ${order.note ? `<div class="note-box">${order.note}</div>` : ''}
-        <a class="photo-link" href="${order.photoLink}" target="_blank" rel="noopener">📷 View delivery photo</a>
+      
         ${actionsHtml}
         ${footerHtml}
       </article>
@@ -807,7 +750,7 @@
     const board = document.getElementById('board');
     board.innerHTML = COLUMNS.map(columnHtml).join('');
 
-    const active = orders.filter((o) => o.state !== 'completed' && o.state !== 'cancelled').length;
+   const active = orders.filter((o) => o.state !== 'delivered' && o.state !== 'cancelled').length;
     document.getElementById('count-summary').textContent = `${active} active order${active === 1 ? '' : 's'}`;
 
     board.querySelectorAll('[data-action]').forEach((btn) => {
@@ -822,15 +765,18 @@
      re-render, then triggers a full render on expiry
      ===================================================== */
   function tick() {
-    let anyExpired = false;
+    
     orders.forEach((order) => {
-      if (order.state !== 'new') return;
+     if (order.state !== 'pending') return;
       const elapsed = (Date.now() - order.createdAt) / 1000;
       const remaining = NEW_ORDER_WINDOW_SECONDS - elapsed;
-      if (remaining <= 0) {
-        anyExpired = true;
-        return;
-      }
+     if (remaining <= 0) {
+  const el = document.querySelector(
+    `[data-timer-for="${order.id}"] [data-timer-text]`
+  );
+  if (el) el.textContent = '00:00';
+  return;
+}
       const el = document.querySelector(`[data-timer-for="${order.id}"] [data-timer-text]`);
       if (el) el.textContent = formatMMSS(remaining);
       const pill = document.querySelector(`[data-timer-for="${order.id}"]`);
@@ -839,51 +785,17 @@
         document.getElementById(`card-${order.id}`)?.classList.add('is-urgent');
       }
     });
-    if (anyExpired) {
-      autoCancelExpired();
-    }
-    document.getElementById('live-clock').textContent = new Date().toLocaleTimeString('en-ZA', { hour12: false });
+   
+ 
+  document.getElementById('live-clock').textContent = new Date().toLocaleTimeString('en-ZA', { hour12: false });
   }
 
   /* =====================================================
      MOCK: occasionally drop in a brand-new order so the
      "New Orders" column feels live during a demo
      ===================================================== */
-  const MOCK_ITEM_POOL = [
-    { name: 'Big Boss Burger', price: 90 },
-    { name: 'Mega Kota', price: 50 },
-    { name: 'Braai Box', price: 85 },
-    { name: 'Sunshine Breakfast', price: 45 },
-  ];
-  const MOCK_NAMES = ['Zanele B.', 'Karabo M.', 'Given F.', 'Palesa T.', 'Mpho L.'];
-  const MOCK_BUILDINGS = ["Men's Res — David Webster", 'Jubilee Hall', 'Barnato Hall', 'Reith Hall', 'College House'];
-
-  function spawnMockOrder() {
-    const itemCount = 1 + Math.floor(Math.random() * 2);
-    const items = [];
-    let total = 0;
-    for (let i = 0; i < itemCount; i++) {
-      const pick = MOCK_ITEM_POOL[Math.floor(Math.random() * MOCK_ITEM_POOL.length)];
-      const qty = 1 + Math.floor(Math.random() * 2);
-      items.push({ name: pick.name, qty });
-      total += pick.price * qty;
-    }
-    const order = {
-      id: 'CE-' + nextOrderNumber++,
-      customerName: MOCK_NAMES[Math.floor(Math.random() * MOCK_NAMES.length)],
-      phone: '0' + Math.floor(60 + Math.random() * 30) + ' ' + Math.floor(100 + Math.random() * 900) + ' ' + Math.floor(1000 + Math.random() * 9000),
-      items,
-      total,
-      paymentMethod: Math.random() > 0.5 ? 'cash' : 'transfer',
-      building: MOCK_BUILDINGS[Math.floor(Math.random() * MOCK_BUILDINGS.length)],
-      note: '',
-      photoLink: '#',
-      state: 'new',
-      createdAt: Date.now(),
-    };
-    orders.push(order);
-    render();
-  }
+  
+ 
 
   /* =====================================================
      INIT
@@ -901,10 +813,10 @@
   });
 
   render();
-  setInterval(tick, 1000);
-  // Demo-only: simulate a new order arriving periodically.
-  setInterval(spawnMockOrder, 45000);
-</script>
+setInterval(tick, 1000);
+// Demo-only: simulate a new order arriving periodically.
+loadOrders();
+setInterval(loadOrders, 15000);</script>
 
 </body>
 </html>
