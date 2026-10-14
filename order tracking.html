@@ -234,6 +234,16 @@
             background: var(--green-ok);
             color: var(--white);
         }
+        .cancel-order-btn {
+            border: 1.5px solid var(--brick);
+            border-radius: 8px;
+            padding: 10px 14px;
+            background: var(--white);
+            color: var(--brick);
+            font: 600 0.82rem 'Work Sans', sans-serif;
+            cursor: pointer;
+        }
+        .cancel-order-btn:disabled { opacity: 0.6; cursor: wait; }
 
         /* ===== TIMELINE ===== */
         .timeline-card {
@@ -538,7 +548,7 @@
         <!-- ============ CANCELLED BANNER ============ -->
         <div class="cancelled-banner" id="cancelledBanner" role="alert">
             <h2>Order Cancelled</h2>
-            <p>Sorry, we are out of order. Your payment will be refunded — please try again later.</p>
+            <p>This order has been cancelled. If you already made a bank transfer, please contact Campus Eats staff.</p>
         </div>
 
         <!-- ============ ORDER SUMMARY ============ -->
@@ -558,6 +568,7 @@
                 </div>
             </div>
             <span class="status-pill" id="statusPill" aria-live="polite">Pending</span>
+            <button class="cancel-order-btn" id="cancelOrderBtn" type="button" hidden>Cancel Order</button>
         </section>
 
         <!-- ============ TIMELINE ============ -->
@@ -635,6 +646,7 @@
   const pill = document.getElementById('statusPill');
   const orderIdEl = document.getElementById('orderId');
   const banner = document.getElementById('cancelledBanner');
+  const cancelOrderBtn = document.getElementById('cancelOrderBtn');
   const timeline = document.getElementById('timeline');
   const demoControls = document.querySelector('.demo-controls');
   const demoNote = document.querySelector('.demo-note');
@@ -662,6 +674,7 @@
     pill.textContent = statusLabels[status] || status;
     pill.classList.toggle('cancelled', status === 'cancelled');
     pill.classList.toggle('delivered', status === 'delivered');
+    cancelOrderBtn.hidden = status !== 'pending';
     document.body.classList.toggle('is-cancelled', status === 'cancelled');
     banner.style.display = status === 'cancelled' ? 'block' : 'none';
 
@@ -725,6 +738,27 @@
       showMessage(error.message || 'Could not connect to the order service');
     }
   }
+
+  cancelOrderBtn.addEventListener('click', async function () {
+    if (!orderId || !token || cancelOrderBtn.disabled) return;
+    if (!window.confirm('Cancel this order? This cannot be undone.')) return;
+    cancelOrderBtn.disabled = true;
+    cancelOrderBtn.textContent = 'Cancelling…';
+    try {
+      const response = await fetch(API_BASE + '/api/orders/' + encodeURIComponent(orderId) + '/cancel', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not cancel this order.');
+      await refresh();
+    } catch (error) {
+      showMessage(error.message || 'Could not cancel this order.');
+    } finally {
+      cancelOrderBtn.disabled = false;
+      cancelOrderBtn.textContent = 'Cancel Order';
+    }
+  });
 
   refresh();
   timer = setInterval(refresh, 7000);
