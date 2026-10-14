@@ -12,7 +12,7 @@ const catalogRoutes = require('./routes/catalog');
 const { startOrderTimeoutCron } = require('./utils/cron');
 
 const app = express();
-
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
