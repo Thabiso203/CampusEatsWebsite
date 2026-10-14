@@ -773,8 +773,11 @@
   }
   
 
+  let isSubmitting = false;
+
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
+    if (isSubmitting) return;
     clearError();
 
     const token = localStorage.getItem('campusEatsToken');
@@ -823,6 +826,7 @@
       apiItems.push({ menuItemId: match.id, quantity: Number(cartItem.qty) });
     }
 
+    isSubmitting = true;
     placeOrderBtn.disabled = true;
     placeOrderBtn.textContent = 'Placing Order…';
     try {
@@ -855,6 +859,7 @@
       window.location.href = 'order-confirmation.html?orderId=' + encodeURIComponent(data.order.id);
     } catch (error) {
       showError(error.message || 'Could not connect to Campus Eats. Your order has not been confirmed.');
+      isSubmitting = false;
       placeOrderBtn.disabled = false;
       placeOrderBtn.textContent = 'Place Order';
     }
