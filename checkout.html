@@ -154,6 +154,13 @@
     margin-bottom: 18px;
   }
 
+  .empty-cart-state { margin: 12px 0; padding: 20px; border: 1px dashed rgba(168, 65, 44, 0.45); border-radius: 12px; background: rgba(239, 233, 218, 0.55); }
+  .empty-cart-state h3 { color: var(--hunter); font-size: 21px; margin-bottom: 8px; }
+  .empty-cart-state p { line-height: 1.55; font-size: 14px; margin-bottom: 14px; }
+  .empty-cart-state a { display: inline-flex; align-items: center; justify-content: center; background: var(--hunter); color: var(--white); padding: 11px 16px; border-radius: 8px; font-weight: 600; }
+  .empty-cart-state a:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+  .empty-cart-notice { margin-top: 10px; color: var(--brick); font-size: 13px; font-weight: 600; }
+  .btn-place-order:disabled { opacity: .55; cursor: not-allowed; }
   /* ---------- ORDER SUMMARY ---------- */
 
   .summary-row {
@@ -452,6 +459,11 @@
   <div class="card" id="orderSummaryCard">
     <h2 class="section-heading">Order Summary</h2>
     <div id="summaryItems"><!-- populated by JS --></div>
+    <div id="emptyCartState" class="empty-cart-state" hidden role="status" aria-live="polite">
+      <h3>Your cart is empty</h3>
+      <p>There are no meals ready for checkout yet. Browse the menu, choose your food and quantities, then return here to place your order.</p>
+      <a href="campuseats-menu.html">Browse the menu</a>
+    </div>
 
     <div class="summary-totals">
       <div class="totals-line">
@@ -559,6 +571,7 @@
       <div class="place-order-block">
         <button type="submit" class="btn-place-order" id="placeOrderBtn">Place Order</button>
         <p class="secure-note">No card needed — pay the runner directly on arrival.</p>
+        <p id="emptyCartNotice" class="empty-cart-notice" hidden>Add at least one meal from the menu to place an order.</p>
       </div>
 
     </form>
@@ -611,6 +624,9 @@
 
   function renderSummary() {
     summaryItemsEl.innerHTML = "";
+    const empty = cartItems.length === 0;
+    document.getElementById("emptyCartState").hidden = !empty;
+    document.querySelector(".summary-totals").hidden = empty;
     let subtotal = 0;
 
     cartItems.forEach(item => {
@@ -742,6 +758,13 @@
   const form = document.getElementById("checkoutForm");
   
   const placeOrderBtn = document.getElementById("placeOrderBtn");
+  const emptyCartNotice = document.getElementById("emptyCartNotice");
+  function updateEmptyCartState() {
+    const empty = cartItems.length === 0;
+    placeOrderBtn.disabled = empty;
+    emptyCartNotice.hidden = !empty;
+  }
+  updateEmptyCartState();
 
   function showError(message) {
     errorBox.textContent = message;
