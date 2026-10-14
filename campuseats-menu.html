@@ -918,6 +918,24 @@
 (function () {
   const cart = {}; // { itemId: { name, price, qty } }
   let itemCounter = 0;
+  let savedCart = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem("campusEatsMenuCart") || "[]");
+    if (Array.isArray(saved)) savedCart = saved;
+  } catch (_) {
+    savedCart = [];
+  }
+
+  function persistMenuCart() {
+    try {
+      const items = Object.values(cart).filter(item => item.qty > 0).map(item => ({
+        name: item.name, price: Number(item.price), qty: Number(item.qty)
+      }));
+      localStorage.setItem("campusEatsMenuCart", JSON.stringify(items));
+    } catch (_) {
+      // The cart still works for this page session if browser storage is unavailable.
+    }
+  }
 
   // ---------- STEP 1: turn every existing menu-item into an interactive one ----------
   document.querySelectorAll(".menu-item").forEach((item) => {
@@ -931,6 +949,15 @@
 
     item.dataset.itemId = id;
     item.dataset.name = name.toLowerCase();
+
+    const savedItem = savedCart.find(saved =>
+      saved && typeof saved.name === "string" &&
+      saved.name.trim().toLowerCase() === name.toLowerCase() &&
+      Number(saved.price) === price
+    );
+    if (savedItem && Number.isInteger(Number(savedItem.qty)) && Number(savedItem.qty) > 0 && Number(savedItem.qty) <= 99) {
+      cart[id] = { name, price, qty: Number(savedItem.qty) };
+    }
 
     // Add a lightweight visual header to make the menu cards easier to scan.
     const lowerName = name.toLowerCase();
@@ -1140,12 +1167,14 @@
       addBtn.classList.add("added");
       setTimeout(() => addBtn.classList.remove("added"), 250);
       refreshQtyDisplay();
+      persistMenuCart();
       renderCart();
     });
 
     qtyBox.querySelector(".qty-plus").addEventListener("click", () => {
       cart[id].qty += 1;
       refreshQtyDisplay();
+      persistMenuCart();
       renderCart();
     });
 
@@ -1153,8 +1182,10 @@
       cart[id].qty -= 1;
       if (cart[id].qty <= 0) delete cart[id];
       refreshQtyDisplay();
+      persistMenuCart();
       renderCart();
     });
+    refreshQtyDisplay();
   });
 
   // ---------- STEP 2: search filter ----------
@@ -1204,12 +1235,14 @@
         `;
         row.querySelector(".cart-plus").addEventListener("click", () => {
           cart[id].qty += 1;
+          persistMenuCart();
           renderCart();
           syncItemCard(id);
         });
         row.querySelector(".cart-minus").addEventListener("click", () => {
           cart[id].qty -= 1;
           if (cart[id].qty <= 0) delete cart[id];
+          persistMenuCart();
           renderCart();
           syncItemCard(id);
         });
@@ -1262,6 +1295,7 @@
       alert("Your cart could not be saved. Please check your browser settings and try again.");
     }
   });
+  renderCart();
 })();
 </script>
 
