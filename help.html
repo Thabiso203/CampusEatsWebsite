@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Help & Support — Campus Eats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--hunter:#1F3823;--brick:#A8412C;--parchment:#EFE9DA;--gold:#C9A227;--ink:#2B2418;--white:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Work Sans',sans-serif;background:var(--parchment);color:var(--ink);min-height:100vh;line-height:1.6}
+a{color:inherit;text-decoration:none}
+header{background:var(--hunter);border-bottom:3px solid var(--gold);padding:15px 20px;color:var(--white)}
+.nav{max-width:1000px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{font:700 22px 'Oswald',sans-serif;letter-spacing:1px}
+.links{display:flex;gap:16px;flex-wrap:wrap;font-size:13px}
+.links a:hover{text-decoration:underline;color:var(--gold)}
+main{max-width:900px;margin:0 auto;padding:34px 20px 60px}
+.eyebrow{color:var(--brick);font:600 12px 'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1.5px}
+h1,h2{font-family:'Oswald',sans-serif;line-height:1.2}
+h1{font-size:clamp(34px,6vw,48px);margin:8px 0 10px}
+.intro{max-width:650px;margin-bottom:26px;color:#554c3c}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{background:var(--white);border:1px solid #2b24181c;border-radius:13px;padding:20px;box-shadow:0 3px 12px #2b24180b}
+.card h2{font-size:20px;margin-bottom:8px}
+.card p,.card li{font-size:14px;color:#554c3c}
+.card ul{padding-left:20px}
+.callout{margin-top:18px;border-left:4px solid var(--gold);background:#c9a2271c;padding:16px;border-radius:0 10px 10px 0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.button{display:inline-block;padding:11px 16px;border-radius:8px;font-weight:600;font-size:13px}
+.primary{background:var(--hunter);color:var(--white)}
+.secondary{border:1px solid var(--hunter);color:var(--hunter)}
+@media(max-width:520px){.links{gap:10px}main{padding-top:24px}}
+</style>
+</head>
+<body>
+<header><div class="nav"><a class="brand" href="campuseats-menu.html">CAMPUS EATS</a><nav class="links" aria-label="Main navigation"><a href="campuseats-menu.html">Menu</a><a href="my-orders.html">My Orders</a><a href="help.html" aria-current="page">Help</a><a href="login.html" id="accountNav">Sign In</a><a href="#" id="logoutNav" hidden>Log Out</a></nav></div></header>
+<main>
+<span class="eyebrow">We're here to help</span>
+<h1>Need a hand ordering?</h1>
+<p class="intro">Use this quick guide if you're stuck choosing items, checking out, or following an order.</p>
+<div class="steps">
+<section class="card"><h2>1. Choose your food</h2><p>Open the menu, search for a dish, and use the item controls to add the quantity you want to your cart.</p></section>
+<section class="card"><h2>2. Check your cart</h2><p>Open your cart, review the items and quantities, then continue to checkout. If the cart is empty, return to the menu and add an item first.</p></section>
+<section class="card"><h2>3. Place your order</h2><p>Enter your delivery details, choose an available payment method, and review the order before submitting it. Campus Eats does not take card payments on this site.</p></section>
+<section class="card"><h2>4. Track your order</h2><p>Sign in and open My Orders. Select Track Order to see the latest status. Keep the page open for automatic status updates.</p></section>
+<section class="card"><h2>Can I cancel?</h2><p>You can cancel while an order is still Pending. Once staff accept it, the cancellation option is removed. If you already made a bank transfer for a cancelled order, contact staff.</p></section>
+<section class="card"><h2>Something went wrong?</h2><p>Try refreshing the page and checking your internet connection. Make sure you're signed in before opening My Orders. If checkout still fails, avoid submitting the same order repeatedly.</p></section>
+</div>
+<div class="callout"><strong>Still stuck?</strong><p>If you cannot place an order or your order details look incorrect, contact the Campus Eats staff through the contact channel provided by your food vendor. Include your order ID if you already have one, but never share your password.</p></div>
+<div class="actions"><a class="button primary" href="campuseats-menu.html">Browse Menu</a><a class="button secondary" href="my-orders.html">Open My Orders</a></div>
+</main>
+<script>
+(function(){
+ const account=document.getElementById('accountNav'), logout=document.getElementById('logoutNav');
+ const token=localStorage.getItem('campusEatsToken'), raw=localStorage.getItem('campusEatsCurrentUser');
+ if(token&&raw){let user={};try{user=JSON.parse(raw)||{}}catch(_){}const name=[user.first_name,user.firstName,user.name,user.full_name].find(v=>typeof v==='string'&&v.trim());account.textContent=name?name.trim().split(/\s+/)[0]:'My Account';account.href='my-orders.html';logout.hidden=false;}
+ logout.addEventListener('click',e=>{e.preventDefault();localStorage.removeItem('campusEatsToken');localStorage.removeItem('campusEatsCurrentUser');window.location.href='campuseats-menu.html';});
+})();
+</script>
+</body>
+</html>
