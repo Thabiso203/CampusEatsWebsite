@@ -126,3 +126,17 @@ CREATE TABLE order_items (
 );
 
 CREATE INDEX idx_order_items_order ON order_items(order_id);
+
+-- ------------------------------------------------------------
+-- ORDER FEEDBACK (one review per delivered order)
+-- ------------------------------------------------------------
+CREATE TABLE order_feedback (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id),
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_order_feedback_customer ON order_feedback(customer_id);
