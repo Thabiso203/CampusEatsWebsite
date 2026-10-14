@@ -236,6 +236,68 @@
     justify-content: space-between;
   }
 
+  .menu-item {
+    overflow: hidden;
+    border: 1px solid rgba(31, 56, 35, 0.08);
+    border-left: 4px solid var(--brick);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .menu-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(43, 36, 24, 0.13);
+    border-left-color: var(--gold);
+  }
+
+  .menu-item .food-visual {
+    min-height: 66px;
+    margin: -14px -16px 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(115deg, #1F3823, #31583a);
+    color: #FFFFFF;
+  }
+
+  .menu-item .food-visual-icon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.13);
+    font-size: 27px;
+    flex: 0 0 auto;
+  }
+
+  .menu-item .food-visual-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: #F4D985;
+    text-align: right;
+  }
+
+  .menu-item .food-visual-label small {
+    display: block;
+    margin-top: 3px;
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    text-transform: none;
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .menu-item { transition: none; }
+    .menu-item:hover { transform: none; }
+  }
+
   .menu-item .item-top {
     display: flex;
     justify-content: space-between;
@@ -863,6 +925,39 @@
 
     item.dataset.itemId = id;
     item.dataset.name = name.toLowerCase();
+
+    // Add a lightweight visual header to make the menu cards easier to scan.
+    const lowerName = name.toLowerCase();
+    const category = item.closest(".menu-category");
+    const categoryName = category?.querySelector(".category-banner")?.textContent.trim() || "Campus favourite";
+    let foodIcon = "🍽️";
+    if (/burger|cheese|bacon/.test(lowerName)) foodIcon = "🍔";
+    else if (/wrap/.test(lowerName)) foodIcon = "🌯";
+    else if (/kota|gatsby|sandwich/.test(lowerName)) foodIcon = "🥪";
+    else if (/chicken|wings|drumstick/.test(lowerName)) foodIcon = "🍗";
+    else if (/pizza/.test(lowerName)) foodIcon = "🍕";
+    else if (/braai|steak|ribs|beef/.test(lowerName)) foodIcon = "🥩";
+    else if (/breakfast|egg|omelette|toast|pancake/.test(lowerName)) foodIcon = "🍳";
+    else if (/chips|fries|potato/.test(lowerName)) foodIcon = "🍟";
+    else if (/juice|drink|water|cooler|soda/.test(lowerName)) foodIcon = "🥤";
+    else if (/salad|veggie|vegetable/.test(lowerName)) foodIcon = "🥗";
+    else if (/ice cream|cake|dessert|waffle/.test(lowerName)) foodIcon = "🍰";
+
+    const visual = document.createElement("div");
+    visual.className = "food-visual";
+    visual.setAttribute("aria-hidden", "true");
+    const icon = document.createElement("span");
+    icon.className = "food-visual-icon";
+    icon.textContent = foodIcon;
+    const label = document.createElement("span");
+    label.className = "food-visual-label";
+    label.textContent = categoryName;
+    const hint = document.createElement("small");
+    hint.textContent = "Made for campus cravings";
+    label.appendChild(hint);
+    visual.append(icon, label);
+    const itemTop = item.querySelector(".item-top");
+    if (itemTop) item.insertBefore(visual, itemTop);
 
     // Container for button + quantity stepper
     const controls = document.createElement("div");
