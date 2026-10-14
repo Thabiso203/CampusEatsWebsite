@@ -478,6 +478,11 @@
             color: var(--brick);
         }
 
+        .manual-refresh-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:14px; }
+        .manual-refresh-btn { border:0; border-radius:8px; background:var(--hunter); color:#fff; padding:10px 14px; font-weight:700; cursor:pointer; }
+        .manual-refresh-btn:disabled { opacity:.6; cursor:wait; }
+        .manual-refresh-btn:focus-visible { outline:3px solid var(--gold); outline-offset:3px; }
+        #liveRefresh { color:var(--muted, #5f594e); font-size:13px; line-height:1.5; margin-top:10px; }
         /* ===== RESPONSIVE ===== */
         @media (max-width: 640px) {
             .nav-links { display: none; }
@@ -641,6 +646,8 @@
   const metaBlocks = document.querySelectorAll('.order-meta .meta-block');
   const statusLabels = { pending: 'Pending', accepted: 'Order Accepted', delivered: 'Delivered', cancelled: 'Cancelled' };
   let timer = null;
+  let manualRefreshBtn = null;
+  let refreshInProgress = false;
 
   if (demoControls) demoControls.style.display = 'none';
   if (demoNote) demoNote.style.display = 'none';
@@ -735,7 +742,9 @@
       summary = document.createElement('section');
       summary.id = 'liveOrderDetails';
       summary.className = 'timeline-card';
-      summary.innerHTML = '<h2>Order Details</h2><div id="liveItems"></div><p id="liveTotal"></p><p id="livePayment"></p><p id="liveNotes"></p><p id="liveRefresh" aria-live="polite"></p>';
+      summary.innerHTML = '<h2>Order Details</h2><div id="liveItems"></div><p id="liveTotal"></p><p id="livePayment"></p><p id="liveNotes"></p><div class="manual-refresh-row"><button id="manualRefreshBtn" class="manual-refresh-btn" type="button">Refresh status now</button></div><p id="liveRefresh" aria-live="polite">Checking latest status…</p>'; 
+      manualRefreshBtn = summary.querySelector("#manualRefreshBtn");
+      manualRefreshBtn.addEventListener("click", refresh);
       timeline.parentElement.insertAdjacentElement('afterend', summary);
     }
     const items = Array.isArray(order.items) ? order.items : [];
@@ -753,9 +762,15 @@
   }
 
   async function refresh() {
+    if (refreshInProgress) return;
     if (!orderId || !token) {
       showMessage(!token ? 'Please sign in to view your order' : 'No order selected');
       return;
+    }
+    refreshInProgress = true;
+    if (manualRefreshBtn) {
+      manualRefreshBtn.disabled = true;
+      manualRefreshBtn.textContent = 'Refreshing…';
     }
     try {
       const response = await fetch(API_BASE + '/api/orders/' + encodeURIComponent(orderId), {
@@ -764,12 +779,20 @@
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not load this order.');
       renderOrder(data.order);
+      const refreshLabel = document.getElementById('liveRefresh');
+      if (refreshLabel) refreshLabel.textContent = 'Last checked: ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) + (['delivered', 'cancelled'].includes(data.order.status) ? ' · Order is ' + data.order.status + '.' : ' · Updates automatically every 7 seconds.');
       if (['delivered', 'cancelled'].includes(data.order.status) && timer) {
         clearInterval(timer);
         timer = null;
       }
     } catch (error) {
       showMessage(error.message || 'Could not connect to the order service');
+    } finally {
+      refreshInProgress = false;
+      if (manualRefreshBtn) {
+        manualRefreshBtn.disabled = false;
+        manualRefreshBtn.textContent = 'Refresh status now';
+      }
     }
   }
 
