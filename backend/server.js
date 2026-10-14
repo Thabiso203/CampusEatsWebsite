@@ -13,7 +13,21 @@ const { startOrderTimeoutCron } = require('./utils/cron');
 
 const app = express();
 app.set('trust proxy', 1);
-app.use(cors());
+// Allow only explicitly configured browser origins. Set CORS_ALLOWED_ORIGINS
+// in each Render service (comma-separated, without trailing slashes).
+const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    // Requests without an Origin header (e.g. health checks, server clients)
+    // are not browser cross-origin requests.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS origin not allowed'));
+  },
+}));
 app.use(express.json());
 
 // Basic abuse protection on auth endpoints (login/register brute-forcing).
