@@ -668,7 +668,7 @@ async function loadOrders() {
       total: Number(order.total_cents) / 100,
       paymentMethod: order.payment_method,
       building: order.building_name || '',
-      note: '',
+      note: order.order_notes || '',
       state: order.status,
       createdAt: new Date(order.created_at).getTime()
     }));
@@ -814,7 +814,7 @@ async function applyAction(orderId, action) {
           <div class="meta-row"><span class="meta-label">Payment</span><span class="meta-value">${paymentTagHtml(order.paymentMethod)}</span></div>
           <div class="meta-row"><span class="meta-label">Building</span><span class="meta-value">${order.building}</span></div>
         </div>
-        ${order.note ? `<div class="note-box">${order.note}</div>` : ''}
+        ${order.note ? `<div class="note-box"><strong>Customer instructions:</strong> ${escapeHtml(order.note)}</div>` : ''}
       
         ${actionsHtml}
         ${footerHtml}
@@ -831,6 +831,7 @@ async function applyAction(orderId, action) {
       order.customerName,
       order.phone,
       order.building,
+      order.note,
       ...order.items.map((item) => item.name)
     ].join(' ').toLowerCase();
 
