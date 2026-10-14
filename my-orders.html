@@ -111,7 +111,6 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
   let loading = false;
   let toastTimer = null;
   let feedbackOrderId = null;
-  let promptedFeedbackOrders = new Set();
   const feedbackModal = document.getElementById('feedbackModal');
   const feedbackForm = document.getElementById('feedbackForm');
   const feedbackRating = document.getElementById('feedbackRating');
@@ -242,13 +241,10 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       card.appendChild(bottom);
       ordersEl.appendChild(card);
     });
-    const deliveredWithoutFeedback=currentOrders.find(order=>order.status==='delivered'&&!order.feedback_submitted&&!promptedFeedbackOrders.has(order.id));
-    if(deliveredWithoutFeedback) openFeedback(deliveredWithoutFeedback.id);
   }
 
   function openFeedback(orderId){
     feedbackOrderId=orderId;
-    promptedFeedbackOrders.add(orderId);
     feedbackForm.reset();
     feedbackStatus.textContent='';
     feedbackModal.classList.add('open');
