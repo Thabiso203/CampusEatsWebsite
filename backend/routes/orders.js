@@ -62,6 +62,10 @@ router.post('/:id/feedback', verifyToken, requireCustomer, async (req, res) => {
 // ------------------------------------------------------------
 router.post('/', verifyToken, requireCustomer, async (req, res) => {
   const { buildingId, roomNumber, paymentMethod, items } = req.body;
+  const orderNotes = typeof req.body.orderNotes === "string" ? req.body.orderNotes.trim() : "";
+  if (orderNotes.length > 300) {
+    return res.status(400).json({ error: "Order instructions must be 300 characters or fewer." });
+  }
 
   if (!buildingId || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'buildingId and at least one item are required' });
@@ -133,8 +137,8 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
 
       const orderResult = await client.query(
         `INSERT INTO orders
-           (customer_id, building_id, room_number, subtotal_cents, fee_cents, total_cents, payment_method, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+           (customer_id, building_id, room_number, subtotal_cents, fee_cents, total_cents, payment_method, order_notes, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
          RETURNING *`,
         [
           req.user.id,
@@ -144,6 +148,7 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
           feeCents,
           totalCents,
           paymentMethod || 'cash',
+          orderNotes || null,
         ]
       );
       const newOrder = orderResult.rows[0];
