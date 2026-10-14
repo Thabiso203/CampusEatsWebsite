@@ -529,6 +529,15 @@
         <textarea id="locationNote" name="locationNote" placeholder="e.g. Room 214, ring the buzzer, meet at the Solomon Mahlangu House steps…"></textarea>
       </div>
 
+      <!-- Optional order instructions -->
+      <div class="form-block">
+        <label class="form-label" for="orderInstructions">
+          Instructions for the Kitchen or Runner <span class="optional-tag">(optional)</span>
+        </label>
+        <textarea id="orderInstructions" name="orderInstructions" maxlength="300" placeholder="e.g. Please leave out the tomato, or call when you arrive."></textarea>
+        <div class="checkout-note" style="text-align:left;">Up to 300 characters. Requests may not always be possible.</div>
+      </div>
+
       <!-- Photo Upload -->
       <div class="form-block">
         <label class="form-label" for="photoUpload">
@@ -804,6 +813,7 @@
           buildingId,
           roomNumber: locationDetail || null,
           paymentMethod: selectedPayment.value,
+          orderNotes: document.getElementById("orderInstructions").value.trim(),
           items: apiItems
         })
       });
