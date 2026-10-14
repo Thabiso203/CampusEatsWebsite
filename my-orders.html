@@ -36,6 +36,10 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
 .order-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px;padding-top:13px;border-top:1px solid #eee8dc}
 .total{font:700 19px 'Oswald',sans-serif;color:var(--brick)}
 .empty{background:white;border-radius:12px;padding:28px;text-align:center;line-height:1.6}
+.order-filters{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:18px 0 14px}
+.order-filter{background:#fff;border:1px solid #d8d0c0;color:var(--ink);padding:9px 13px;border-radius:999px;font-size:13px}
+.order-filter[aria-pressed="true"]{background:var(--hunter);border-color:var(--hunter);color:#fff}
+.order-filter .count{display:inline-block;margin-left:5px;font-size:11px;opacity:.8}
 #notificationToast{display:none;position:fixed;right:18px;bottom:18px;z-index:1000;max-width:min(420px,calc(100vw - 36px));padding:15px 18px;background:var(--hunter);color:white;border-left:4px solid var(--gold);border-radius:10px;box-shadow:0 8px 28px #0003;line-height:1.45}
 #notificationToast.show{display:block}
 .feedback-button{background:#e8f0e6;border:1px solid #b5c9b0;color:var(--hunter);font-weight:700}
@@ -58,6 +62,13 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
 <section class="hero"><span class="eyebrow">Your Campus Eats account</span><h1>My Orders</h1><p class="subtitle">See your recent orders and check their latest status.</p></section>
 <div class="actions"><button class="primary" id="refreshBtn" type="button">Refresh Orders</button><button class="secondary" id="notificationBtn" type="button">Enable Notifications</button><a class="button secondary" href="campuseats-menu.html">Browse Menu</a></div>
 <div id="message" role="status" aria-live="polite">Loading your orders…</div><div id="notificationToast" role="status" aria-live="polite"></div>
+<div class="order-filters" id="orderFilters" aria-label="Filter orders" hidden>
+<button class="order-filter" type="button" data-filter="all" aria-pressed="true">All <span class="count" data-count="all">0</span></button>
+<button class="order-filter" type="button" data-filter="pending" aria-pressed="false">Pending <span class="count" data-count="pending">0</span></button>
+<button class="order-filter" type="button" data-filter="accepted" aria-pressed="false">Accepted <span class="count" data-count="accepted">0</span></button>
+<button class="order-filter" type="button" data-filter="delivered" aria-pressed="false">Delivered <span class="count" data-count="delivered">0</span></button>
+<button class="order-filter" type="button" data-filter="cancelled" aria-pressed="false">Cancelled <span class="count" data-count="cancelled">0</span></button>
+</div>
 <section id="orders" aria-label="Your order history"></section>
 </main>
 <div class="feedback-modal" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
@@ -89,6 +100,9 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
   const token = localStorage.getItem('campusEatsToken');
   const message = document.getElementById('message');
   const ordersEl = document.getElementById('orders');
+  const orderFilters = document.getElementById('orderFilters');
+  let currentOrders = [];
+  let activeFilter = 'all';
   const refreshBtn = document.getElementById('refreshBtn');
   const notificationBtn = document.getElementById('notificationBtn');
   const notificationToast = document.getElementById('notificationToast');
@@ -149,8 +163,29 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
     }
   });
   function renderOrders(orders){
+    currentOrders = Array.isArray(orders) ? orders : [];
+    const counts = {all:currentOrders.length, pending:0, accepted:0, delivered:0, cancelled:0};
+    currentOrders.forEach(order => {
+      const status = String(order.status || 'pending').toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(counts, status)) counts[status]++;
+    });
+    orderFilters.hidden = currentOrders.length === 0;
+    orderFilters.querySelectorAll('[data-count]').forEach(el => { el.textContent = String(counts[el.dataset.count] || 0); });
+    orderFilters.querySelectorAll('[data-filter]').forEach(button => {
+      const selected = button.dataset.filter === activeFilter;
+      button.setAttribute('aria-pressed', String(selected));
+    });
+    const visibleOrders = activeFilter === 'all' ? currentOrders : currentOrders.filter(order => String(order.status || 'pending').toLowerCase() === activeFilter);
     ordersEl.replaceChildren();
-    if(!orders.length){
+    if(currentOrders.length && visibleOrders.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      addText(empty, 'h2', '', 'No ' + activeFilter + ' orders');
+      addText(empty, 'p', '', 'Choose another status filter to see more of your orders.');
+      ordersEl.appendChild(empty);
+      return;
+    }
+    if(!currentOrders.length){
       const empty = document.createElement('div');
       empty.className = 'empty';
       addText(empty,'h2','', 'No orders yet');
@@ -165,7 +200,7 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       ordersEl.appendChild(empty);
       return;
     }
-    orders.forEach(order=>{
+    visibleOrders.forEach(order=>{
       const card=document.createElement('article');
       card.className='order';
       const top=document.createElement('div'); top.className='order-top';
@@ -315,6 +350,12 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       message.textContent=error.message||'Could not connect to Campus Eats. Please try again.';
     }finally{refreshBtn.disabled=false;loading=false;}
   }
+  orderFilters.addEventListener('click', event => {
+    const button = event.target.closest('[data-filter]');
+    if (!button) return;
+    activeFilter = button.dataset.filter;
+    renderOrders(currentOrders);
+  });
   refreshBtn.addEventListener('click',()=>loadOrders(false));
   loadOrders(false);
   setInterval(()=>loadOrders(true),15000);
