@@ -163,6 +163,24 @@
     opacity: 0.65;
   }
 
+  .order-search {
+    flex: 1 1 260px;
+    max-width: 420px;
+    min-width: 220px;
+    padding: 10px 12px;
+    border: 1px solid rgba(43, 36, 24, 0.22);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+  }
+
+  .order-search:focus {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
   .board {
     max-width: 1600px;
     margin: 0 auto;
@@ -497,7 +515,15 @@
 
 <div class="board-header">
   <h1>Order Dashboard</h1>
-  <span class="count-summary" id="count-summary"></span>
+  <input
+    class="order-search"
+    id="order-search"
+    type="search"
+    placeholder="Search order ID, customer, building, or item…"
+    aria-label="Search orders"
+    autocomplete="off"
+  >
+  <span class="count-summary" id="count-summary" aria-live="polite"></span>
 </div>
 
 <main class="board" id="board">
@@ -527,6 +553,7 @@ const staffToken = sessionStorage.getItem('campuseats_staff_token');
 
 let orders = [];
 let soundOn = true;
+let orderSearchTerm = '';
 
 async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -726,14 +753,29 @@ async function applyAction(orderId, action) {
     `;
   }
 
+  function orderMatchesSearch(order) {
+    if (!orderSearchTerm) return true;
+
+    const searchableText = [
+      order.displayId,
+      order.id,
+      order.customerName,
+      order.phone,
+      order.building,
+      ...order.items.map((item) => item.name)
+    ].join(' ').toLowerCase();
+
+    return searchableText.includes(orderSearchTerm);
+  }
+
   function columnHtml(col) {
     const colOrders = orders
-      .filter((o) => o.state === col.key)
+      .filter((o) => o.state === col.key && orderMatchesSearch(o))
       .sort((a, b) => a.createdAt - b.createdAt);
 
     const body = colOrders.length
       ? colOrders.map(cardHtml).join('')
-      : `<div class="column-empty">No orders here right now</div>`;
+      : `<div class="column-empty">${orderSearchTerm ? 'No matching orders' : 'No orders here right now'}</div>`;
 
     return `
       <section class="column ${col.cls}">
@@ -750,8 +792,11 @@ async function applyAction(orderId, action) {
     const board = document.getElementById('board');
     board.innerHTML = COLUMNS.map(columnHtml).join('');
 
-   const active = orders.filter((o) => o.state !== 'delivered' && o.state !== 'cancelled').length;
-    document.getElementById('count-summary').textContent = `${active} active order${active === 1 ? '' : 's'}`;
+    const active = orders.filter((o) => o.state !== 'delivered' && o.state !== 'cancelled').length;
+    const matching = orders.filter(orderMatchesSearch).length;
+    document.getElementById('count-summary').textContent = orderSearchTerm
+      ? `${matching} matching order${matching === 1 ? '' : 's'} · ${active} active total`
+      : `${active} active order${active === 1 ? '' : 's'}`;
 
     board.querySelectorAll('[data-action]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -800,6 +845,11 @@ async function applyAction(orderId, action) {
   /* =====================================================
      INIT
      ===================================================== */
+  document.getElementById('order-search').addEventListener('input', function () {
+    orderSearchTerm = this.value.trim().toLowerCase();
+    render();
+  });
+
   document.getElementById('signout-btn').addEventListener('click', () => {
     sessionStorage.removeItem('campuseats_staff_authed');
     window.location.href = 'staff-login.html';
