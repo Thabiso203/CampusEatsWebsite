@@ -467,6 +467,19 @@
     margin-top: 2px;
   }
 
+  /* ---------- CUSTOMER FEEDBACK ---------- */
+  .feedback-toolbar { max-width: 1600px; margin: 0 auto; padding: 16px 22px 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .feedback-panel { max-width: 1600px; margin: 0 auto; padding: 16px 22px 40px; }
+  .feedback-panel[hidden] { display: none; }
+  .feedback-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .feedback-card { background: var(--white); border: 1px solid rgba(43,36,24,.12); border-radius: 12px; padding: 16px; box-shadow: 0 2px 6px rgba(43,36,24,.05); }
+  .feedback-rating { color: #8b6b00; font-size: 19px; letter-spacing: 2px; margin: 8px 0; }
+  .feedback-meta { color: var(--ink); opacity: .65; font-size: 12px; line-height: 1.6; }
+  .feedback-comment { margin-top: 10px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; font-size: 13px; }
+  .feedback-empty { padding: 22px; background: rgba(255,255,255,.65); border-radius: 10px; color: var(--ink); opacity: .75; }
+  .btn-secondary { background: var(--gold); color: var(--ink); font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer; }
+  .btn-secondary[aria-pressed="true"] { background: var(--hunter); color: var(--white); }
+
   /* ---------- RESPONSIVE ---------- */
 
   @media (max-width: 700px) {
@@ -515,6 +528,7 @@
 
 <div class="board-header">
   <h1>Order Dashboard</h1>
+  <button class="btn-secondary" id="feedback-toggle" aria-pressed="false">Customer Feedback</button>
   <input
     class="order-search"
     id="order-search"
@@ -529,6 +543,15 @@
 <main class="board" id="board">
   <!-- Columns are rendered by JS -->
 </main>
+
+<section class="feedback-panel" id="feedback-panel" hidden aria-labelledby="feedback-heading">
+  <div class="board-header" style="padding:0 0 14px;max-width:none">
+    <h1 id="feedback-heading">Customer Feedback</h1>
+    <input class="order-search" id="feedback-search" type="search" placeholder="Search order ID, customer, or comment…" aria-label="Search customer feedback" autocomplete="off">
+    <span class="count-summary" id="feedback-summary" aria-live="polite"></span>
+  </div>
+  <div class="feedback-list" id="feedback-list"><div class="feedback-empty">Loading feedback…</div></div>
+</section>
 
 <script>
   /* =====================================================
@@ -576,6 +599,52 @@ async function apiRequest(path, options = {}) {
 
 function formatOrderId(id) {
   return `#${String(id).replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+}
+
+let feedbackRows = [];
+let feedbackSearchTerm = '';
+
+async function loadFeedback() {
+  const list = document.getElementById('feedback-list');
+  list.innerHTML = '<div class="feedback-empty">Loading feedback…</div>';
+  try {
+    const data = await apiRequest('/api/staff/feedback');
+    feedbackRows = data.feedback || [];
+    renderFeedback();
+  } catch (error) {
+    console.error('Could not load customer feedback:', error);
+    list.innerHTML = '<div class="feedback-empty">Could not load feedback. Please try again.</div>';
+    document.getElementById('feedback-summary').textContent = error.message;
+  }
+}
+
+function renderFeedback() {
+  const matching = feedbackRows.filter((item) => [
+    formatOrderId(item.order_id), item.order_id, item.customer_name, item.comment
+  ].join(' ').toLowerCase().includes(feedbackSearchTerm));
+  document.getElementById('feedback-summary').textContent =
+    `${matching.length} feedback entr${matching.length === 1 ? 'y' : 'ies'}`;
+  const list = document.getElementById('feedback-list');
+  if (!matching.length) {
+    list.innerHTML = '<div class="feedback-empty">No feedback found yet.</div>';
+    return;
+  }
+  list.innerHTML = matching.map((item) => {
+    const rating = Math.max(0, Math.min(5, Number(item.rating) || 0));
+    const date = item.created_at ? new Date(item.created_at).toLocaleString('en-ZA') : 'Date unavailable';
+    return `<article class="feedback-card">
+      <div class="card-top"><strong>${escapeHtml(item.customer_name || 'Customer')}</strong><span class="order-id">${escapeHtml(formatOrderId(item.order_id))}</span></div>
+      <div class="feedback-rating" aria-label="${rating} out of 5 stars">${'★'.repeat(rating)}<span style="opacity:.25">${'★'.repeat(5-rating)}</span></div>
+      <div class="feedback-meta">Submitted: ${escapeHtml(date)}</div>
+      <div class="feedback-comment">${item.comment ? escapeHtml(item.comment) : '<em>No written comment was provided.</em>'}</div>
+    </article>`;
+  }).join('');
 }
 
 async function loadOrders() {
@@ -845,6 +914,21 @@ async function applyAction(orderId, action) {
   /* =====================================================
      INIT
      ===================================================== */
+  document.getElementById('feedback-toggle').addEventListener('click', function () {
+    const panel = document.getElementById('feedback-panel');
+    const opening = panel.hidden;
+    panel.hidden = !opening;
+    document.getElementById('board').hidden = opening;
+    this.setAttribute('aria-pressed', String(opening));
+    this.textContent = opening ? 'Back to Orders' : 'Customer Feedback';
+    if (opening) loadFeedback();
+  });
+
+  document.getElementById('feedback-search').addEventListener('input', function () {
+    feedbackSearchTerm = this.value.trim().toLowerCase();
+    renderFeedback();
+  });
+
   document.getElementById('order-search').addEventListener('input', function () {
     orderSearchTerm = this.value.trim().toLowerCase();
     render();
