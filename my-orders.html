@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Orders — Campus Eats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--hunter:#1F3823;--brick:#A8412C;--parchment:#EFE9DA;--gold:#C9A227;--ink:#2B2418;--white:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Work Sans',sans-serif;background:var(--parchment);color:var(--ink);min-height:100vh}
+a{color:inherit;text-decoration:none}
+header{background:var(--hunter);border-bottom:3px solid var(--gold);padding:15px 20px;color:var(--white)}
+.nav{max-width:1000px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{font:700 22px 'Oswald',sans-serif;letter-spacing:1px}
+.links{display:flex;gap:18px;flex-wrap:wrap;font:500 14px 'Oswald',sans-serif;text-transform:uppercase}
+.links a:hover{color:var(--gold)}
+main{max-width:900px;margin:0 auto;padding:38px 16px 70px}
+.hero{text-align:center;margin-bottom:26px}
+.eyebrow{display:inline-block;color:var(--brick);font:600 12px 'Oswald',sans-serif;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+h1{font:700 38px 'Oswald',sans-serif;color:var(--hunter)}
+.subtitle{margin-top:8px;color:#645d50;line-height:1.5}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0}
+button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work Sans',sans-serif;cursor:pointer}
+.primary{background:var(--brick);color:white}.secondary{background:white;border:1px solid #d8d0c0;color:var(--ink)}
+#message{padding:13px 15px;background:white;border-radius:10px;margin:18px 0;text-align:center;line-height:1.5}
+#orders{display:grid;gap:14px}
+.order{background:white;border-radius:12px;padding:18px;border-left:5px solid var(--gold);box-shadow:0 3px 12px #2b24180c}
+.order-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.order-id{font:700 18px 'Oswald',sans-serif;color:var(--hunter)}
+.status{display:inline-block;border-radius:20px;padding:5px 10px;background:#f0eadb;font-size:12px;font-weight:700;text-transform:capitalize}
+.status.delivered{background:#e0f3e5;color:#176534}.status.cancelled{background:#fbe4df;color:#8f271b}.status.accepted{background:#e3edf9;color:#1d4d7d}
+.meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#6c655a;font-size:13px;margin-top:12px}
+.order-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px;padding-top:13px;border-top:1px solid #eee8dc}
+.total{font:700 19px 'Oswald',sans-serif;color:var(--brick)}
+.empty{background:white;border-radius:12px;padding:28px;text-align:center;line-height:1.6}
+@media(max-width:520px){h1{font-size:32px}.order{padding:15px}.links{gap:12px}}
+</style>
+</head>
+<body>
+<header><div class="nav"><a class="brand" href="campuseats-menu.html">CAMPUS EATS</a><nav class="links" aria-label="Main navigation"><a href="campuseats-menu.html">Menu</a><a href="order%20tracking.html">Track Order</a><a href="my-orders.html" aria-current="page">My Orders</a><a href="login.html">Sign In</a></nav></div></header>
+<main>
+<section class="hero"><span class="eyebrow">Your Campus Eats account</span><h1>My Orders</h1><p class="subtitle">See your recent orders and check their latest status.</p></section>
+<div class="actions"><button class="primary" id="refreshBtn" type="button">Refresh Orders</button><a class="button secondary" href="campuseats-menu.html">Browse Menu</a></div>
+<div id="message" role="status" aria-live="polite">Loading your orders…</div>
+<section id="orders" aria-label="Your order history"></section>
+</main>
+<script>
+(function(){
+  'use strict';
+  const API_BASE = window.CAMPUS_EATS_API_BASE || 'https://campus-eats-test-api.onrender.com';
+  const token = localStorage.getItem('campusEatsToken');
+  const message = document.getElementById('message');
+  const ordersEl = document.getElementById('orders');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const labels = {pending:'Pending', accepted:'Order Confirmed', delivered:'Delivered', cancelled:'Cancelled'};
+  function addText(parent, tag, className, value){
+    const el = document.createElement(tag);
+    if(className) el.className = className;
+    el.textContent = value;
+    parent.appendChild(el);
+    return el;
+  }
+  function renderOrders(orders){
+    ordersEl.replaceChildren();
+    if(!orders.length){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      addText(empty,'h2','', 'No orders yet');
+      addText(empty,'p','', 'When you place an order, it will appear here.');
+      const link = document.createElement('a');
+      link.className='button primary';
+      link.href='campuseats-menu.html';
+      link.textContent='Explore the Menu';
+      link.style.display='inline-block';
+      link.style.marginTop='16px';
+      empty.appendChild(link);
+      ordersEl.appendChild(empty);
+      return;
+    }
+    orders.forEach(order=>{
+      const card=document.createElement('article');
+      card.className='order';
+      const top=document.createElement('div'); top.className='order-top';
+      addText(top,'span','order-id','#'+String(order.id).slice(0,8).toUpperCase());
+      const status=addText(top,'span','status '+String(order.status||'pending').toLowerCase(),labels[order.status]||order.status||'Unknown');
+      card.appendChild(top);
+      const meta=document.createElement('div');meta.className='meta';
+      const date=order.created_at ? new Date(order.created_at).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}) : 'Date unavailable';
+      addText(meta,'span','',date);
+      addText(meta,'span','', 'Order ID: '+String(order.id).slice(0,8).toUpperCase());
+      card.appendChild(meta);
+      const bottom=document.createElement('div');bottom.className='order-bottom';
+      addText(bottom,'span','total','R'+(Number(order.total_cents||0)/100).toFixed(2));
+      const track=document.createElement('a');
+      track.className='button primary';
+      track.href='order%20tracking.html?orderId='+encodeURIComponent(order.id);
+      track.textContent='Track Order';
+      bottom.appendChild(track);
+      card.appendChild(bottom);
+      ordersEl.appendChild(card);
+    });
+  }
+  async function loadOrders(){
+    if(!token){
+      message.textContent='Please sign in to view your order history.';
+      ordersEl.replaceChildren();
+      const link=document.createElement('a');
+      link.href='login.html';
+      link.className='button primary';
+      link.textContent='Sign In';
+      link.style.display='block';
+      link.style.width='fit-content';
+      link.style.margin='14px auto';
+      ordersEl.appendChild(link);
+      return;
+    }
+    refreshBtn.disabled=true;
+    message.textContent='Loading your orders…';
+    try{
+      const response=await fetch(API_BASE+'/api/orders',{headers:{Authorization:'Bearer '+token}});
+      const data=await response.json().catch(()=>({}));
+      if(response.status===401||response.status===403){
+        localStorage.removeItem('campusEatsToken');
+        localStorage.removeItem('campusEatsCurrentUser');
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+      if(!response.ok) throw new Error(data.error||'Could not load your orders.');
+      const orders=Array.isArray(data.orders)?data.orders:[];
+      renderOrders(orders);
+      message.textContent=orders.length ? 'Showing your '+orders.length+' most recent order'+(orders.length===1?'':'s')+'.' : 'Your order history is empty.';
+    }catch(error){
+      message.textContent=error.message||'Could not connect to Campus Eats. Please try again.';
+    }finally{refreshBtn.disabled=false;}
+  }
+  refreshBtn.addEventListener('click',loadOrders);
+  loadOrders();
+})();
+</script>
+</body>
+</html>
