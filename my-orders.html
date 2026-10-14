@@ -24,6 +24,7 @@ h1{font:700 38px 'Oswald',sans-serif;color:var(--hunter)}
 .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0}
 button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work Sans',sans-serif;cursor:pointer}
 .primary{background:var(--brick);color:white}.secondary{background:white;border:1px solid #d8d0c0;color:var(--ink)}
+.cancel-order{background:#fff;border:1px solid var(--brick);color:var(--brick)}.cancel-order:disabled{opacity:.6;cursor:wait}
 #message{padding:13px 15px;background:white;border-radius:10px;margin:18px 0;text-align:center;line-height:1.5}
 #orders{display:grid;gap:14px}
 .order{background:white;border-radius:12px;padding:18px;border-left:5px solid var(--gold);box-shadow:0 3px 12px #2b24180c}
@@ -98,9 +99,36 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       track.href='order%20tracking.html?orderId='+encodeURIComponent(order.id);
       track.textContent='Track Order';
       bottom.appendChild(track);
+      if(order.status==='pending'){
+        const cancel=document.createElement('button');
+        cancel.type='button';
+        cancel.className='cancel-order';
+        cancel.textContent='Cancel Order';
+        cancel.addEventListener('click',()=>cancelOrder(order.id,cancel));
+        bottom.appendChild(cancel);
+      }
       card.appendChild(bottom);
       ordersEl.appendChild(card);
     });
+  }
+  async function cancelOrder(orderId, button){
+    if(!window.confirm('Cancel this order? This cannot be undone.')) return;
+    button.disabled=true;
+    button.textContent='Cancelling…';
+    try{
+      const response=await fetch(API_BASE+'/api/orders/'+encodeURIComponent(orderId)+'/cancel',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+token}
+      });
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.error||'Could not cancel this order.');
+      message.textContent='Order cancelled successfully.';
+      await loadOrders();
+    }catch(error){
+      message.textContent=error.message||'Could not cancel this order.';
+      button.disabled=false;
+      button.textContent='Cancel Order';
+    }
   }
   async function loadOrders(){
     if(!token){
