@@ -828,7 +828,7 @@
       }
       localStorage.setItem('campusEatsLastOrder', JSON.stringify(data.order));
       localStorage.removeItem('campusEatsCart');
-      window.location.href = 'order%20tracking.html?orderId=' + encodeURIComponent(data.order.id);
+      window.location.href = 'order-confirmation.html?orderId=' + encodeURIComponent(data.order.id);
     } catch (error) {
       showError(error.message || 'Could not connect to Campus Eats. Your order has not been confirmed.');
       placeOrderBtn.disabled = false;
