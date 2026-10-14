@@ -263,7 +263,7 @@ router.get('/:id', verifyToken, requireCustomer, async (req, res) => {
 router.get('/', verifyToken, requireCustomer, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT o.id, o.status, o.total_cents, o.created_at,
+      `SELECT o.id, o.status, o.total_cents, o.created_at, o.order_notes,
               (f.order_id IS NOT NULL) AS feedback_submitted
        FROM orders o
        LEFT JOIN order_feedback f ON f.order_id = o.id AND f.customer_id = o.customer_id
