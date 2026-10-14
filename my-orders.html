@@ -113,6 +113,7 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
   let loading = false;
   let toastTimer = null;
   let feedbackOrderId = null;
+  let feedbackTrigger = null;
   const feedbackModal = document.getElementById('feedbackModal');
   const feedbackForm = document.getElementById('feedbackForm');
   const feedbackRating = document.getElementById('feedbackRating');
@@ -244,7 +245,7 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
           feedbackButton.type='button';
           feedbackButton.className='feedback-button';
           feedbackButton.textContent='Leave Feedback';
-          feedbackButton.addEventListener('click',()=>openFeedback(order.id));
+          feedbackButton.addEventListener('click',()=>openFeedback(order.id, feedbackButton));
           bottom.appendChild(feedbackButton);
         }
       }
@@ -253,8 +254,9 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
     });
   }
 
-  function openFeedback(orderId){
+  function openFeedback(orderId, trigger){
     feedbackOrderId=orderId;
+    feedbackTrigger=trigger || null;
     feedbackForm.reset();
     feedbackStatus.textContent='';
     feedbackModal.classList.add('open');
@@ -264,7 +266,13 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
   function closeFeedback(){
     feedbackModal.classList.remove('open');
     feedbackOrderId=null;
+    if(feedbackTrigger && document.contains(feedbackTrigger)) feedbackTrigger.focus();
+    feedbackTrigger=null;
   }
+
+  document.addEventListener('keydown', event=>{
+    if(event.key==='Escape' && feedbackModal.classList.contains('open')) closeFeedback();
+  });
 
   document.getElementById('feedbackLater').addEventListener('click',closeFeedback);
   feedbackModal.addEventListener('click',event=>{if(event.target===feedbackModal) closeFeedback();});
