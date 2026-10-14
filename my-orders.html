@@ -242,7 +242,7 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
       card.appendChild(bottom);
       ordersEl.appendChild(card);
     });
-    const deliveredWithoutFeedback=orders.find(order=>order.status==='delivered'&&!order.feedback_submitted&&!promptedFeedbackOrders.has(order.id));
+    const deliveredWithoutFeedback=currentOrders.find(order=>order.status==='delivered'&&!order.feedback_submitted&&!promptedFeedbackOrders.has(order.id));
     if(deliveredWithoutFeedback) openFeedback(deliveredWithoutFeedback.id);
   }
 
