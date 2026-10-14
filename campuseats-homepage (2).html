@@ -300,22 +300,42 @@
     padding: 56px 24px 80px;
   }
 
+  .section-kicker {
+    color: var(--hunter);
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
   .section-heading {
     color: var(--brick);
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 3px;
+    font-size: clamp(25px, 3vw, 34px);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+
+  .section-intro {
+    max-width: 650px;
+    color: var(--ink);
+    opacity: 0.78;
+    line-height: 1.6;
     margin-bottom: 28px;
   }
 
   .menu-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 22px;
   }
 
   .menu-card {
-    display: block;
+    display: flex;
+    flex-direction: column;
     background: var(--white);
     border: 1px solid rgba(43, 36, 24, 0.12);
     border-radius: 14px;
@@ -324,38 +344,126 @@
     transition: transform 0.18s ease, box-shadow 0.18s ease;
   }
 
-  .menu-card:hover {
+  .menu-card:hover, .menu-card:focus-visible {
     transform: translateY(-4px);
     box-shadow: 0 12px 26px rgba(43, 36, 24, 0.12);
   }
 
   .menu-card-img {
     width: 100%;
-    aspect-ratio: 4 / 3;
+    min-height: 132px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    flex-wrap: wrap;
+    padding: 22px 12px;
+    font-size: clamp(34px, 4vw, 48px);
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--hunter), #31583a);
+    color: var(--white);
   }
+
+  .menu-card:nth-child(2) .menu-card-img { background: linear-gradient(135deg, #9a6720, var(--gold)); }
+  .menu-card:nth-child(3) .menu-card-img { background: linear-gradient(135deg, #873321, var(--brick)); }
+  .menu-card:nth-child(4) .menu-card-img { background: linear-gradient(135deg, #5c482b, #9b7c4b); }
 
   .menu-card-body {
     padding: 16px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    align-items: flex-start;
   }
 
   .menu-card-name {
     font-family: 'Oswald', sans-serif;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 17px;
     color: var(--ink);
     text-transform: uppercase;
     letter-spacing: 0.4px;
   }
 
-  .menu-card-price {
+  .menu-card-description {
+    color: var(--ink);
+    opacity: 0.78;
+    font-size: 13px;
+    line-height: 1.5;
     margin-top: 8px;
+    flex: 1;
+  }
+
+  .menu-card-price {
+    margin-top: 14px;
     color: var(--brick);
-    font-weight: 600;
-    font-size: 15px;
+    font-weight: 700;
+    font-size: 19px;
     font-family: 'Oswald', sans-serif;
   }
 
-  /* ---------- RESPONSIVE ---------- */
+  .featured-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 28px;
+    background: var(--brick);
+    color: var(--white);
+    padding: 13px 20px;
+    border-radius: 8px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+
+  .featured-cta:hover { background: var(--brick-dark); transform: translateY(-1px); }
+
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr;
+      padding-top: 44px;
+      gap: 40px;
+      text-align: left;
+    }
+    .badge-wrap { order: -1; }
+    .varsity-badge { width: min(240px, 70vw); }
+    .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .nav-links.open {
+      display: flex;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+      padding: 18px 24px 22px;
+      background: var(--hunter);
+      border-bottom: 3px solid var(--gold);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+    }
+    .nav-links.open .nav-label { width: 100%; padding: 8px 2px; }
+    .nav-links.open .btn-signin { text-align: center; }
+    .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+    .hero { padding-left: 20px; padding-right: 20px; }
+    .hero-actions { flex-direction: column; align-items: flex-start; }
+    .menu-grid { grid-template-columns: 1fr; }
+    .menu-section { padding: 42px 20px 58px; }
+    .menu-card-img { min-height: 112px; }
+    .headline { font-size: clamp(30px, 9vw, 40px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+
 
   @media (max-width: 900px) {
     .hero {
@@ -470,42 +578,49 @@
 
 <!-- ============ FEATURED MENU ============ -->
 <section class="menu-section" id="menu">
-  <h2 class="section-heading">Today's Favorites — from Tubatsi Grill House</h2>
-  <div class="menu-grid">
+  <p class="section-kicker">Made for campus cravings</p>
+  <h2 class="section-heading">A few good reasons to open the menu</h2>
+  <p class="section-intro">From a stacked burger to a proper kota or a hot breakfast, explore a few picks from Tubatsi Grill House. Prices and ingredients are shown upfront so you know what you’re ordering.</p>
 
+  <div class="menu-grid">
     <a class="menu-card" href="campuseats-menu.html#burgers">
-      <div class="menu-card-img" style="background:#A8412C;"></div>
+      <div class="menu-card-img" aria-hidden="true"><span>🍔</span><span>🥓</span><span>🧀</span></div>
       <div class="menu-card-body">
         <div class="menu-card-name">Big Boss Burger</div>
+        <p class="menu-card-description">Four beef patties, two rashers of bacon, two slices of cheese, veggies and sauce.</p>
         <div class="menu-card-price">R90</div>
       </div>
     </a>
 
     <a class="menu-card" href="campuseats-menu.html#kotas">
-      <div class="menu-card-img" style="background:#C9A227;"></div>
+      <div class="menu-card-img" aria-hidden="true"><span>🍞</span><span>🍟</span><span>🌭</span><span>🧀</span></div>
       <div class="menu-card-body">
         <div class="menu-card-name">Mega Kota</div>
+        <p class="menu-card-description">A loaded kota with Russian, Vienna, cheese, chips and a beef patty.</p>
         <div class="menu-card-price">R50</div>
       </div>
     </a>
 
     <a class="menu-card" href="campuseats-menu.html#combo">
-      <div class="menu-card-img" style="background:#1F3823;"></div>
+      <div class="menu-card-img" aria-hidden="true"><span>🥩</span><span>🌭</span><span>🍟</span></div>
       <div class="menu-card-body">
         <div class="menu-card-name">Braai Box</div>
+        <p class="menu-card-description">Freshly grilled brisket and wors, served with your choice of pap or chips.</p>
         <div class="menu-card-price">R85</div>
       </div>
     </a>
 
     <a class="menu-card" href="campuseats-menu.html#breakfast">
-      <div class="menu-card-img" style="background:#8C7A46;"></div>
+      <div class="menu-card-img" aria-hidden="true"><span>🍳</span><span>🌭</span><span>🫘</span><span>🍟</span></div>
       <div class="menu-card-body">
         <div class="menu-card-name">Sunshine Breakfast</div>
+        <p class="menu-card-description">Two eggs, Russian sausage, baked beans and chips.</p>
         <div class="menu-card-price">R45</div>
       </div>
     </a>
-
   </div>
+
+  <a class="featured-cta" href="campuseats-menu.html">Explore the full menu <span aria-hidden="true" style="margin-left:10px;">→</span></a>
 </section>
 
 
