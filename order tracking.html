@@ -480,14 +480,16 @@
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 640px) {
-            .nav-links {
-                display: none;
+            .nav-links { display: none; }
+            .nav-links.open {
+                display: flex; position: absolute; top: 100%; left: 0; right: 0;
+                flex-direction: column; align-items: stretch; gap: 14px;
+                padding: 18px 24px 22px; background: var(--hunter);
+                border-bottom: 3px solid var(--gold); box-shadow: 0 10px 18px rgba(0,0,0,.18);
             }
-            .nav-toggle {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-            }
+            .nav-links.open .nav-label { width: 100%; padding: 8px 2px; }
+            .nav-links.open .btn-signin { text-align: center; }
+            .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
             .track-hero h1 {
                 font-size: 1.6rem;
             }
@@ -529,9 +531,9 @@
                 <span class="wordmark">Campus Eats</span>
             </a>
 
-            <button class="nav-toggle" aria-label="Open menu">☰</button>
+            <button class="nav-toggle" type="button" aria-label="Open navigation menu" aria-controls="campusEatsNavLinks" aria-expanded="false">☰</button>
 
-            <nav class="nav-links">
+            <nav class="nav-links" id="campusEatsNavLinks">
                 <a class="nav-label" href="campuseats-menu.html">Menu</a>
                 <a class="nav-label active" href="my-orders.html" aria-current="page">Track Order</a>
                 <a class="nav-label" href="my-orders.html">My Orders</a>
@@ -804,5 +806,19 @@
 })();
 </script>
 
+
+<script>
+(function campusEatsMobileNav() {
+ const toggle=document.querySelector('.nav-toggle');
+ const nav=document.getElementById('campusEatsNavLinks');
+ if(!toggle||!nav)return;
+ function setMenuOpen(open){nav.classList.toggle('open',open);toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Close navigation menu':'Open navigation menu');toggle.textContent=open?'×':'☰';}
+ toggle.addEventListener('click',()=>setMenuOpen(!nav.classList.contains('open')));
+ nav.addEventListener('click',event=>{if(event.target.closest('a'))setMenuOpen(false);});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape')setMenuOpen(false);});
+ document.addEventListener('click',event=>{if(!nav.contains(event.target)&&!toggle.contains(event.target))setMenuOpen(false);});
+ window.addEventListener('resize',()=>{if(window.innerWidth>640)setMenuOpen(false);});
+})();
+</script>
 </body>
 </html>
