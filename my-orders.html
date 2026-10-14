@@ -214,6 +214,7 @@ button,.button{border:0;border-radius:8px;padding:11px 16px;font:600 14px 'Work 
         cancelled: 'This order was cancelled and will not be prepared or delivered.'
       };
       addText(card, 'p', 'status-explanation', statusExplanations[String(order.status || 'pending').toLowerCase()] || 'Check tracking for the latest update on this order.');
+      if (order.order_notes) addText(card, 'p', 'order-instructions', 'Your instructions: ' + order.order_notes);
       const meta=document.createElement('div');meta.className='meta';
       const date=order.created_at ? new Date(order.created_at).toLocaleString([], {dateStyle:'medium',timeStyle:'short'}) : 'Date unavailable';
       addText(meta,'span','',date);
