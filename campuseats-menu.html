@@ -936,41 +936,68 @@
     const lowerName = name.toLowerCase();
     const fullDescription = item.querySelector(".description")?.textContent.trim().toLowerCase() || "";
     const foodText = lowerName + " " + fullDescription;
-    let foodIcons = ["🍽️"];
+    const categoryId = item.closest(".menu-category")?.id || "";
+    let foodIcons = ["🥪"];
     let visualLabel = name;
     let visualHint = fullDescription || "Ask us about the ingredients";
 
-    // Show the ingredients that define the dish, rather than a generic plate or category.
-    if (/egg.*tomato|tomato.*egg/.test(lowerName)) {
-      foodIcons = ["🍳", "🍅", "🥪"];
-      visualHint = "Egg + tomato sandwich";
+    // Use dish-specific combinations; breakfast and named sandwiches must be checked
+    // before the broader egg/cheese rules so their other ingredients are not lost.
+    if (categoryId === "breakfast" && /sunshine breakfast/.test(lowerName)) {
+      foodIcons = ["🍳", "🌭", "🫘", "🍟"];
+      visualHint = "2 eggs + Russian + baked beans + chips";
+    } else if (categoryId === "breakfast" && /egg.*bacon/.test(lowerName)) {
+      foodIcons = ["🍳", "🥓", "🥖"];
+      visualHint = "Egg + bacon in a roll";
+    } else if (categoryId === "breakfast" && /russian.*chip/.test(lowerName)) {
+      foodIcons = ["🌭", "🍟", "🥖"];
+      visualHint = "Russian + chips in a roll";
+    } else if (categoryId === "breakfast" && /russian.*egg/.test(lowerName)) {
+      foodIcons = ["🌭", "🍳", "🥖"];
+      visualHint = "Russian + egg in a roll";
+    } else if (categoryId === "breakfast" && /wors.*chip/.test(lowerName)) {
+      foodIcons = ["🥩", "🍟", "🥖"];
+      visualHint = "Wors + chips in a roll";
+    } else if (categoryId === "breakfast" && /egg.*chip/.test(lowerName)) {
+      foodIcons = ["🍳", "🍟", "🥖"];
+      visualHint = "Egg + chips in a roll";
     } else if (/cheese.*egg.*tomato|egg.*cheese.*tomato/.test(lowerName)) {
       foodIcons = ["🧀", "🍳", "🍅", "🥪"];
-      visualHint = "Cheese + egg + tomato";
+      visualHint = "Cheese + egg + tomato sandwich";
+    } else if (/egg.*tomato|tomato.*egg/.test(lowerName)) {
+      foodIcons = ["🍳", "🍅", "🥪"];
+      visualHint = "Egg + tomato sandwich";
     } else if (/cheese.*tomato|tomato.*cheese/.test(lowerName)) {
       foodIcons = ["🧀", "🍅", "🥪"];
       visualHint = "Cheese + tomato sandwich";
-    } else if (/kota/.test(lowerName) || /makoya/.test(lowerName)) {
-      foodIcons = ["🍞", "🍟", "🌭", "🍳", "🧀"];
-      visualHint = fullDescription || "Bread filled with the listed kota fillings";
-    } else if (/vianna|vienna/.test(foodText)) {
-      foodIcons = /chips/.test(foodText) ? ["🌭", "🌭", "🍟"] : ["🌭", "🌭"];
-      visualHint = fullDescription || "Viennas" + (/chips/.test(foodText) ? " + chips" : "");
+    } else if (categoryId === "kotas" || /\bkota\b|makoya/i.test(lowerName)) {
+      foodIcons = ["🍞"];
+      if (/chips/.test(foodText)) foodIcons.push("🍟");
+      if (/russian/.test(foodText)) foodIcons.push("🌭");
+      if (/vianna|vienna/.test(foodText)) foodIcons.push("🌭");
+      if (/polony/.test(foodText)) foodIcons.push("🥓");
+      if (/beef patty/.test(foodText)) foodIcons.push("🥩");
+      if (/egg/.test(foodText)) foodIcons.push("🍳");
+      if (/cheese/.test(foodText)) foodIcons.push("🧀");
+      if (/tomato/.test(foodText)) foodIcons.push("🍅");
+      if (/aachar|chakalaka/.test(foodText)) foodIcons.push("🌶️");
+      if (foodIcons.length === 1) foodIcons.push("🍟", "🌭", "🍳");
+      visualHint = fullDescription || "Bread filled with the ingredients listed for this kota";
     } else if (/burger/.test(lowerName)) {
-      foodIcons = /chicken/.test(lowerName) ? ["🍗", "🥬", "🍔"] : ["🥩", "🧀", "🍔"];
+      foodIcons = /chicken/.test(lowerName) ? ["🍗", "🥬", "🍔"] : ["🥩", /cheese/.test(foodText) ? "🧀" : "🥬", "🍔"];
       visualHint = fullDescription || "Burger";
     } else if (/wrap/.test(lowerName)) {
       foodIcons = /chicken/.test(lowerName) ? ["🌯", "🍗", "🥒", "🍅"] : ["🌯", "🥩", "🥒", "🍅"];
       visualHint = fullDescription || "Filled wrap";
+    } else if (/\bvianna\b|\bvienna\b/.test(foodText)) {
+      foodIcons = /chips/.test(foodText) ? ["🌭", "🌭", "🍟"] : ["🌭", "🌭"];
+      visualHint = fullDescription || "Viennas" + (/chips/.test(foodText) ? " + chips" : "");
     } else if (/egg/.test(foodText) && /bacon/.test(foodText)) {
       foodIcons = ["🍳", "🥓", "🥪"];
-      visualHint = fullDescription || "Egg + bacon roll";
+      visualHint = fullDescription || "Egg + bacon";
     } else if (/egg/.test(foodText) && /chips/.test(foodText)) {
       foodIcons = ["🍳", "🍟", "🥖"];
       visualHint = fullDescription || "Egg + chips";
-    } else if (/egg/.test(foodText)) {
-      foodIcons = ["🍳", "🥪"];
-      visualHint = fullDescription || "Egg-filled meal";
     } else if (/chips/.test(foodText) && /chicken|wings|drum/.test(foodText)) {
       foodIcons = ["🍗", "🍟"];
       visualHint = fullDescription || "Chicken + chips";
@@ -980,7 +1007,7 @@
     } else if (/chicken/.test(foodText)) {
       foodIcons = ["🍗", /chips/.test(foodText) ? "🍟" : "🥗"];
       visualHint = fullDescription || "Chicken";
-    } else if (/ribs/.test(foodText)) {
+    } else if (/ribs/.test(foodText) || /\brib\b/.test(foodText)) {
       foodIcons = ["🍖", /chips/.test(foodText) ? "🍟" : "🔥"];
       visualHint = fullDescription || "Grilled ribs";
     } else if (/brisket|lamb|wors|chuck|braai|grilled/.test(foodText)) {
@@ -989,15 +1016,30 @@
     } else if (/chips/.test(foodText)) {
       foodIcons = ["🍟"];
       visualHint = fullDescription || "Chips";
-    } else if (/sunshine breakfast|breakfast/.test(lowerName)) {
-      foodIcons = ["🍳", "🌭", "🫘", "🍟"];
-      visualHint = fullDescription || "Breakfast plate";
     } else if (/sandwich|roll/.test(lowerName)) {
       foodIcons = ["🥖", "🥪"];
       visualHint = fullDescription || "Filled roll";
     } else if (/cheese/.test(foodText)) {
       foodIcons = ["🧀", "🥪"];
       visualHint = fullDescription || "Cheese sandwich";
+    } else if (/\bmini\b|\bsmall\b|\bmedium\b|\blarge\b/.test(lowerName) && categoryId === "chips") {
+      foodIcons = ["🍟"];
+      visualHint = name + " portion of chips";
+    } else if (/\brussian\b/.test(lowerName)) {
+      foodIcons = ["🌭"];
+      visualHint = "Russian sausage";
+    } else if (/braai box|mixed box|mega meal|champ meal|giga meal/.test(lowerName)) {
+      foodIcons = ["🥩", "🍗", "🌭", /chips/.test(foodText) ? "🍟" : "🍚"];
+      visualHint = fullDescription || "Mixed grilled meal";
+    } else {
+      // A specific food symbol is preferable to a generic empty plate.
+      foodIcons = categoryId === "chicken" ? ["🍗"] :
+        categoryId === "ribs" ? ["🍖"] :
+        categoryId === "grilled" ? ["🥩"] :
+        categoryId === "wors" ? ["🌭"] :
+        categoryId === "sandwich" ? ["🥪"] :
+        categoryId === "chips" ? ["🍟"] : ["🥪"];
+      visualHint = fullDescription || name;
     }
 
     // Add honest descriptions for menu items that did not have one yet.
@@ -1006,11 +1048,16 @@
       "egg & tomato": "Egg and tomato served together in a sandwich.",
       "cheese & tomato": "Cheese and tomato served together in a sandwich.",
       "cheese, egg & tomato": "Cheese, egg and tomato in one sandwich.",
-      "egg & bacon roll": "Egg and bacon served in a roll.",
-      "egg and chip roll": "Egg and chips served in a roll.",
-      "russian and chip roll": "Russian sausage and chips served in a roll.",
-      "russian and egg roll": "Russian sausage and egg served in a roll.",
-      "wors and chip roll": "Wors and chips served in a roll.",
+      "egg and chip roll": "Egg and chips served together in a roll.",
+      "egg & bacon roll": "Egg and bacon served together in a roll.",
+      "russian and chip roll": "Russian sausage and chips served together in a roll.",
+      "russian and egg roll": "Russian sausage and egg served together in a roll.",
+      "wors and chip roll": "Wors and chips served together in a roll.",
+      "sunshine breakfast": "Two eggs, Russian sausage, baked beans and chips.",
+      "base kota": "Bread filled with chips, egg and cheese.",
+      "kota lite": "Bread filled with aachar or chakalaka, chips, egg, cheese and Vienna.",
+      "loxtion kota": "Bread filled with aachar or chakalaka, polony, cheese, chips and Russian.",
+      "makoya": "Bread filled with aachar or chakalaka, beef patty, tomato, egg, cheese, chips and lattice.",
       "2 x vianna and chips": "Two viennas served with chips.",
       "russian and chips": "Russian sausage served with chips.",
       "russian": "Russian sausage, served on its own.",
